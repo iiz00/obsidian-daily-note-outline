@@ -1,4 +1,28 @@
-/* Sets all the text color to red! */
-body {
-    color: red;
+
+.workspace-leaf-content[data-type="daily-note-outline"] .nav-date-range{
+    text-align:center;
+    font-size: var(--nav-item-size);
+    padding: var(--size-2-1);
+}
+
+
+.workspace-leaf-content[data-type="daily-note-outline"] .view-content{
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    padding: 0 0 16px 0;
+}
+
+.workspace-leaf-content[data-type="daily-note-outline"] .nav-files-container{
+    box-sizing: border-box;
+    height: calc(100% - 63px);
+}
+/* 100%からUI部分の高さを引いた*/
+
+.workspace-leaf-content[data-type="daily-note-outline"] .nav-outline-title-content{
+    white-space: nowrap;
+}
+.workspace-leaf-content[data-type="daily-note-outline"] .svg-icon{
+
+    flex-shrink: 0;
 }

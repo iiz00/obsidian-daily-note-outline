@@ -1,84 +1,149 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
+// サンプルから独自に追加したのはItemView, WorkspaceLeaf  →だったけどview.tsに移動した。
+//TFileも追加。
 
-// Remember to rename these classes and interfaces!
+// デイリーノートインターフェースのimport   daily notes viewerを参考に
+import { getAllDailyNotes, getDailyNote, getDateFromFile, getDateUID } from "obsidian-daily-notes-interface";
+import moment from "moment";
+import{ DailyNoteOutlineView, DailyNoteOutlineViewType } from './src/view'
+import{ DailyNoteOutlineSettingTab } from './src/setting'
 
-interface MyPluginSettings {
-	mySetting: string;
+
+// 設定項目
+export interface DailyNoteOutlineSettings {
+	initialSearchType: string; //forwardまたはbackward 特定日から前方探索or当日から後方探索
+	offset: number;		// 未来の日付も含む場合何日分含めるか
+	onset: string;		// 特定日からforwardに探索する場合の起点日
+	duration: number;	// 探索日数
+	showElements:{
+		heading: boolean,
+		link: boolean,
+		tag: boolean,
+		listItems: boolean
+	};
+	headingLevel: boolean[];
+	allRootItems: boolean;
+
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+// 設定項目デフォルト
+export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
+	initialSearchType: 'backward',
+	offset: 7,
+	onset: '2020-03-30',
+	duration: 28,
+	showElements: {
+		heading: true,
+		link: true,
+		tag: true,
+		listItems: true
+	},
+	
+	headingLevel: [true, true, true, true, true, true],
+	allRootItems: true
+
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export interface OutlineData {	
+
+	typeOfElement:'heading'|'link'|'tag'|'listItems';
+	position:object;
+	// とりあえず除外  offset:number;
+	link?:string;
+	displayText?: string;
+	level?:number;
+}
+
+/* おそらく使わない
+export interface OutlineFilter{
+	filteredByType:boolean;
+	filteredByLevel:boolean;
+	filteredBySetting:boolean;
+	filteredByWord:boolean;
+	filteredByChain:boolean;
+}
+*/
+
+export default class DailyNoteOutlinePlugin extends Plugin {
+
+	settings: DailyNoteOutlineSettings;
 
 	async onload() {
+		
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
+		//Dev Docsに従ってカスタムビューをレジスト
+		// outlineData,settingsは引数として渡す必要があるのだろうか。
+		this.registerView(
+			DailyNoteOutlineViewType,
+			(leaf) => new DailyNoteOutlineView(leaf, this, this.settings)
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
+		);
+		//上について、recentFilesはもっと複雑な記述をしている。
 
+		//コマンド追加
+		// Open Outline
+		//DailyNoteOutlineではビューを開くOpenコマンドだけ？
 		// This adds a simple command that can be triggered anywhere
+		// アウトライン表示用のカスタムビューを開く
 		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
+			id: 'daily-note-outline-open',
+			name: 'Open Outline',
 
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
+			// 以下はrecentfilesから
+			// [leaf]は分割代入？ getLeavesOfType(DailyNoteOutlineViewType)の初めの値をleafに入れ、falsyだったらgetLeftLeaf(false)をfに代入
+			//getLeftLeaf(false)はrightに置き換え
+			callback: async ()=> {
+				let [leaf] = this.app.workspace.getLeavesOfType(DailyNoteOutlineViewType);
+				if (!leaf) {
+					leaf = this.app.workspace.getRightLeaf(false);
+					await leaf.setViewState({ type: DailyNoteOutlineViewType});
+				}
+				this.app.workspace.revealLeaf(leaf);
+			}
+		});
+		
+		// get Today's Note
+		// DailyNoteInterfaceのテストのためのコマンド。
+		// 全DNを取得したのち、本日分を取得する。
+		this.addCommand({
+			id: 'daily-note-outline-getTodaysNote',
+			name: "Get Today's Note",
+			callback: async ()=>{
+				// 全てのデイリーノートを取得
+				let allDailyNotes = getAllDailyNotes();
+				console.log(allDailyNotes);
+
+				//本日のデイリーノートを取得
+				let todaysNote = getDailyNote(moment(), allDailyNotes);
+				if (todaysNote){
+					console.log(todaysNote)
+					// 日付の取得
+					//getDateFromFileの第2引数を空欄にするとエラーになるし、"day"をいれてもmoment全体が表示されてしまう。
+					let noteDate = getDateFromFile(todaysNote,"day");
+					console.log(`日付は ${noteDate}です`);
+					
+					const cache = this.app.metadataCache.getFileCache(todaysNote);
+					console.log('cache:', cache);
+
+					const note = this.app.vault.cachedRead(todaysNote);
+					console.log(note);
+
+				} else {
+					console.log('今日のノートがみあたりません');
 				}
 			}
 		});
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
 
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
+	// This adds a settings tab so the user can configure various aspects of the plugin
+	this.addSettingTab(new DailyNoteOutlineSettingTab(this.app, this));
 
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
 	onunload() {
+		// DevDocsに従ってカスタムビューをデタッチ
+		this.app.workspace.detachLeavesOfType(DailyNoteOutlineViewType);
 
 	}
 
@@ -88,50 +153,5 @@ export default class MyPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-	}
-}
-
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
-}
-
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const {containerEl} = this;
-
-		containerEl.empty();
-
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
-
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					console.log('Secret: ' + value);
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
 	}
 }

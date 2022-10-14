@@ -1,10 +1,10 @@
 {
-	"id": "obsidian-sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.1",
+	"id": "obsidian-daily-note-outline",
+	"name": "Daily Note Outline",
+	"version": "0.1.0",
 	"minAppVersion": "0.12.0",
-	"description": "This is a sample plugin for Obsidian. This plugin demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
+	"description": "Add a custom view which shows outline of multiple daily notes with headings, links, tags and list items",
+	"author": "iiz",
+	"authorUrl": "",
 	"isDesktopOnly": false
 }
