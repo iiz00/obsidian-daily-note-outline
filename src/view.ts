@@ -315,13 +315,27 @@ export class DailyNoteOutlineView extends ItemView {
 				
 
 				for (let j=0; j< cache.listItems.length ; j++){
-					// parent が負の数であればルートアイテム。かつposition.start.lineと絶対値が一致していればリストの最初のアイテム。
+					// parent が負の数であればルートレベルアイテム。
 					if (cache.listItems[j].parent < 0){
+						// リストアイテムがリストのトップアイテムか、ルートレベルアイテムだがトップではないかの判定
+						// parentとposition.start.lineと絶対値が一致していればリストの最初のアイテム。
+						// 不一致だとルートレベル。
+						// ただし視覚的に離れたトップレベルのアイテムでも、間にheadingがないとルートアイテムとして判定されてしまうので、
+						// 前のリストアイテムとの行の差が1の時のみルートアイテムとして判定するよう修正する。
+						// element.level :  トップレベル＝0 , ルートレベル＝1
+						let isTopLevel: boolean = true;
+						if (j>0){
+							if (!(Math.abs(cache.listItems[j].parent) == cache.listItems[j].position.start.line) &&
+								(cache.listItems[j].position.start.line - cache.listItems[j-1].position.start.line == 1)){
+									isTopLevel = false;
+								}
+							}
+							
 						const element:OutlineData = {
 						typeOfElement : "listItems",
 						position : cache.listItems[j].position,
 						displayText : lines[cache.listItems[j].position.start.line].replace(/^(\s|\t)*-\s(\[.+\]\s)*/,''),
-						level : (Math.abs(cache.listItems[j].parent) == cache.listItems[j].position.start.line) ? 0 : 1
+						level : (isTopLevel) ? 0 : 1
 						};
 						data[i].push(element);
 					}
