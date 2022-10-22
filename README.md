@@ -51,3 +51,25 @@ Choose whether each element should be displayed in outline.
 With respect to list item, if this setting is off, it shows only the first item in a continuous list. When turned on, it displays all list items at root level.
 リスト項目に関して、この設定がオフになっていると連続したリストの初めの項目だけを表示します。オンになっていると、ルートレベルの項目（＝インデントされていない項目）を全て表示します。
 
+## acknowledgement
+I am new to programming and have found many great plugins in Obsidian community helpful. In particular, 
+Daily note interface by @liamcain for processing daily notes.
+Spaced Repetition by @st3v3nmw and Recent Files by @tgrosinger for creating custom views.
+I also searched and referred to a bunch of posts in plugin-dev channel on Discord.
+
+私はプログラミングの初心者で、多くの素晴らしいObsidianのプラグインを参考に作らせて頂きました。特に、
+デイリーノートの処理にdaily note interface by @liamcain を使わせて頂きました。
+カスタムビューの作成にSpaced Repetition by st3v3nmwとRecent files by tgrosingerを大いに参考にさせて頂きました。
+また、discordの plugin-devの書き込みを多数参考にさせて頂きました。
+
+## (want) to do
+- show number of lines of each note
+- show the first section if no outline element exists
+- collapse a note
+- UI button for change settings
+- better appearance
+- better preview
+- filter / extract
+- note refactoring
+- show linked mentions / created / modefied files on each day (feasible in terms of performance?)
+- derivative plugin for other than daily notes
