@@ -4,6 +4,7 @@ This plugin creates a custom view that displays the outlines of multiple daily n
 
 デイリーノートはちょっとしたメモや雑多な考えを書き留めるのに便利です。しかし、後からどこに書いたのか探すのに苦労することがあります。
 このプラグインは、サイドペインに複数のデイリーノートのアウトラインを一括表示して、デイリーノートに書いた内容を把握しやすくするためのものです。見出しだけでなくリンク、タグ、リスト項目なども表示できます。
+
 ![screenshot](others/screenshot.png)
 
 ## Getting started
