@@ -11,7 +11,7 @@ This plugin creates a custom view that displays the outlines of multiple daily n
 Install the plugin with Obsidian BRAT plugin and enable it.
 In the command palette, choose "Daily Note Outline: Open Outline".
 
-本プラグインをObsidina BRATプラグインを使ってインストールし、有効化して下さい。
+本プラグインをObsidian BRATプラグインを使ってインストールし、有効化して下さい。
 コマンドパレットから、「Daily Note Outline: Open Outline」を実行して下さい。
 
 ## How to use
