@@ -1,72 +1,52 @@
-## Obsidian Sample Plugin
+# Obsidian Daily Note Outline
+Daily notes are a good place to write down various little notes and thoughts. However, it can be difficult to find which daily note you wrote them in later.
+This plugin creates a custom view that displays the outlines of multiple daily notes at once. The outline can display not only headings, but also links, tags and list items.
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+デイリーノートはちょっとしたメモや雑多な考えを書き留めるのに便利です。しかし、後からどこに書いたのか探すのに苦労することがあります。
+このプラグインは、サイドペインに複数のデイリーノートのアウトラインを一括表示して、デイリーノートに書いた内容を把握しやすくするためのものです。見出しだけでなくリンク、タグ、リスト項目なども表示できます。
+![screenshot](others/screenshot.png)
 
-This project uses Typescript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in Typescript Definition format, which contains TSDoc comments describing what it does.
+## Getting started
+Install the plugin with Obsidian BRAT plugin and enable it.
+In the command palette, choose "Daily Note Outline: Open Outline".
 
-**Note:** The Obsidian API is still in early alpha and is subject to change at any time!
+本プラグインをObsidina BRATプラグインを使ってインストールし、有効化して下さい。
+コマンドパレットから、「Daily Note Outline: Open Outline」を実行して下さい。
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Changes the default font color to red using `styles.css`.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+## How to use
+To change the date range to display, click on the left and right arrows.
+To return to the initial range, click on the house icon.
+Click on the refresh icon to redraw the outline, e.g., if you have changed the settings.
+Click on each outline element to open its location.
 
-### First time developing plugins?
+表示する日付の範囲を変更したいときは、左右の矢印をクリックして下さい。
+家のアイコンをクリックすると初期設定の範囲に戻ります。
+設定を変更したときなど、再描画が必要なときは更新アイコンをクリックして下さい。
+各アウトライン要素をクリックするとその場所を開きます。
 
-Quick starting guide for new plugin devs:
+## Settings
+### initial search type
+- backward(default)
+	- Displays the past daily notes for the specified number of days starting from today.  今日を起点として指定した日数分の過去のデイリーノートを表示します。通常こちらで良いと思います。
+- forward
+	- Displays daily notes for the specified number of days starting from the date specified in Onset date. Onset dateで指定した日付を起点として、指定日数分のデイリーノートを表示します。
+### search duration
+Specify the number of days to be explored per page. It is recommended to set a shorter period for those who use Daily notes every day and a longer period for those who use it only occasionally.
+1ページあたりに探索するデイリーノートの期間を日で指定します。デイリーノートを頻繁に使用する人は短く、たまにしか使わない人は長く設定するといいと思います。7日~56日くらいでしょうか。
 
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+### include future daily notes
+When backward search is used, daily notes of the specified number of days in the future are also displayed (If you set it long enough, you can also use this plugin as a list of upcoming events!).
+サーチタイプがbackward search のとき、指定した日数分未来のデイリーノートも表示します。長くすれば将来のイベントのリストとしても使えます！
 
-### Releasing new releases
+### onset date
+For forward search, specify the date in YYYY-MM-DD format to start the search at startup.
+サーチタイプがforward search のとき起動時に探索開始する日付をYYYY-MM-DDの形式で指定します。
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+### show headings / links / tags / list items 
+Choose whether each element should be displayed in outline.
+それぞれの要素をアウトラインとして表示するか指定します。
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+### show all root list items
+With respect to list item, if this setting is off, it shows only the first item in a continuous list. When turned on, it displays all list items at root level.
+リスト項目に関して、この設定がオフになっていると連続したリストの初めの項目だけを表示します。オンになっていると、ルートレベルの項目（＝インデントされていない項目）を全て表示します。
 
-### Adding your plugin to the community plugin list
-
-- Check https://github.com/obsidianmd/obsidian-releases/blob/master/plugin-review.md
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
-
-### How to use
-
-- Clone this repo.
-- `npm i` or `yarn` to install dependencies
-- `npm run dev` to start compilation in watch mode.
-
-### Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-### Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
-
-
-### API Documentation
-
-See https://github.com/obsidianmd/obsidian-api

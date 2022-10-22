@@ -1,4 +1,4 @@
-import DailyNoteOutlinePlugin, { DEFAULT_SETTINGS } from "../main";
+import DailyNoteOutlinePlugin, { DEFAULT_SETTINGS } from "src/main";
 import { App, PluginSettingTab, Setting } from "obsidian";
 import { appHasDailyNotesPluginLoaded } from "obsidian-daily-notes-interface";
 
@@ -17,20 +17,15 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
-        //カレンダープラグインから。デイリーノートのチェック(periodic notes だけでもonになっていれば回避)
+        // デイリーノートのチェック(periodic notes だけでもonになっていれば回避)
         if (!appHasDailyNotesPluginLoaded()) {
-
-            console.log('DN disabled');
-
+            console.log('Daily Note disabled');
             this.containerEl.createDiv("settings-banner", (banner) => {
-              banner.createEl("h3", {
-                text: "Daily Notes plugin not enabled",
-              });
+                banner.createEl("h3", {
+                    text: "Daily Notes plugin not enabled",
+                });
             });
-          }
-        
-          console.log('DN check finished');
-
+        }
 
         new Setting(containerEl)
             .setName("Initial search type")
@@ -62,14 +57,13 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                        
                     }) */
                 text.inputEl.onblur = async (e: FocusEvent) => {
-                        let parsed = parseInt((e.target as HTMLInputElement).value,10);
-                        if (parsed <= 0 || parsed >=366){
-                            parsed = DEFAULT_SETTINGS.duration
-                        }
-                        this.plugin.settings.duration = parsed;
-                        await this.plugin.saveSettings();
-                        console.log(this.plugin.settings.duration);
+                    let parsed = parseInt((e.target as HTMLInputElement).value,10);
+                    if (parsed <= 0 || parsed >=366){
+                        parsed = DEFAULT_SETTINGS.duration
                     }
+                    this.plugin.settings.duration = parsed;
+                    await this.plugin.saveSettings();
+                }
                     
             });
         
@@ -94,10 +88,9 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     } else if (inputedValue >=366) {
                         inputedValue = 366
                     }
-                        this.plugin.settings.offset = inputedValue;
-                        await this.plugin.saveSettings();
-                        console.log(this.plugin.settings.offset);
-                    }
+                    this.plugin.settings.offset = inputedValue;
+                    await this.plugin.saveSettings();
+                }
             });
 
         new Setting(containerEl)
@@ -155,7 +148,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         this.display();
                         await this.plugin.saveSettings();
                     })
-                })
+            });
 
         new Setting(containerEl)
             .setName("Show tags")
@@ -199,7 +192,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
         //表示する見出しレベル
         this.containerEl.createEl("h4", {
             text: "Heading level to display",
-          });
+        });
         this.plugin.settings.headingLevel.forEach( (value, index, arry) => {
             new Setting(containerEl)
                 .setName(`level${ index + 1}`)
@@ -212,7 +205,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                             await this.plugin.saveSettings();
                         })
                 });
-            });
+        });
 
     }
 }
