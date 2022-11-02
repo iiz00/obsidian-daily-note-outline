@@ -1,4 +1,4 @@
-import { Plugin, Pos } from 'obsidian';
+import { Plugin, Pos, TFile } from 'obsidian';
 
 // Daily Note Interface
 import { getAllDailyNotes, getDailyNote, getDateFromFile } from "obsidian-daily-notes-interface";
@@ -23,6 +23,7 @@ export interface DailyNoteOutlineSettings {
 	};
 	headingLevel: boolean[];
 	allRootItems: boolean;
+	displayFileInfo: string; // none || lines || days
 
 }
 
@@ -40,8 +41,17 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 	},
 	
 	headingLevel: [true, true, true, true, true, true],
-	allRootItems: true
+	allRootItems: true,
+	displayFileInfo: 'lines'
 
+}
+
+export interface FileInfo {
+	// file:TFile;
+	date: moment;
+	//content: string;
+	lines: string[];
+	numOfLines: number
 }
 
 export interface OutlineData {	

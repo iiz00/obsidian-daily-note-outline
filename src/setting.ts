@@ -207,5 +207,22 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                 });
         });
 
+        // 表示する情報
+        new Setting(containerEl)
+        .setName("display file information")
+        .setDesc("display the number of lines of the file / days from the base date with the file name")
+        .addDropdown((dropdown) => {
+            dropdown
+                .addOption("none", "none")
+                .addOption("lines","lines")
+                .addOption("days","days")
+                .setValue(this.plugin.settings.displayFileInfo)
+                .onChange(async (value) => {
+                  this.plugin.settings.displayFileInfo = value;
+                  this.display();
+                  await this.plugin.saveSettings();
+                })
+        });
+
     }
 }

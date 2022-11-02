@@ -26,3 +26,18 @@
 
     flex-shrink: 0;
 }
+
+
+/*ノート横に情報を表示*/
+.workspace-leaf-content[data-type="daily-note-outline"] .nav-folder-title::after{
+    content: attr(data-subinfo);
+    font-size: 80%;
+    display: inline-block;
+    position: relative;
+    margin-right: 2px;
+    padding: 2px 0;
+}
+
+.workspace-leaf-content[data-type="daily-note-outline"] .nav-dailynote-title-content {
+    flex-grow: 1;
+}
