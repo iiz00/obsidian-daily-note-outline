@@ -5,7 +5,7 @@ import { ItemView, WorkspaceLeaf, TFile} from 'obsidian'
 import { getAllDailyNotes, getDateFromFile } from "obsidian-daily-notes-interface";
 import moment from "moment"
 
-import DailyNoteOutlinePlugin, { DailyNoteOutlineSettings, OutlineData } from 'src/main';
+import DailyNoteOutlinePlugin, { DailyNoteOutlineSettings, OutlineData, FileInfo } from 'src/main';
 
 
 export const DailyNoteOutlineViewType = 'daily-note-outline';
@@ -16,13 +16,10 @@ export class DailyNoteOutlineView extends ItemView {
 	private plugin: DailyNoteOutlinePlugin;		
 	private settings:DailyNoteOutlineSettings;
 
-	/* 件数固定探索で使用していた
-	startingDateTemp:moment;
-	endingDateTemp:moment;
-	*/
-
-	private arrayAll: [string, TFile][]; 
+	private allDailyNotes: Record<string,TFile>;
+	// private arrayAll: [string, TFile][]; 
 	private targetFiles: TFile[];
+	private fileInfo: FileInfo[];
 	private searchRange: {
 		latest: moment,
 		earliest: moment
@@ -58,11 +55,11 @@ export class DailyNoteOutlineView extends ItemView {
 	async onOpen(){
 
 		this.initView();
-		//  初回のデイリーノート探索処理はinitView()に移動し、実行前にわずかにウエイトを入れた。
-		//  そうしないと起動時に全デイリーノートのデータ取得に失敗したため。
+		//  初回のデイリーノート探索処理はinitView()に移動し、実行前にわずかにウエイト(bootDelay)を入れた。
+		//  そうしないと起動時に全デイリーノートのデータ取得に失敗するようだったため。
 
-		//自動更新のためのデータ変更、ファイル追加/削除の監視
-		const debouncer:Debouncer<[]> = debounce(this.refreshOutline,3000,true);
+		//自動更新のためのデータ変更、ファイル追加/削除の監視 observe file change/create/delete
+		const debouncerRequestRefresh:Debouncer<[]> = debounce(this.autoRefresh,2000,true);
 		this.flagRedraw = false;
 		this.flagRegetAll = false; 
 		this.registerEvent(this.app.metadataCache.on('changed', (file) => {
@@ -70,8 +67,8 @@ export class DailyNoteOutlineView extends ItemView {
 			if (getDateFromFile(file,"day")){
 				if (this.targetFiles.includes(file)){
 					this.flagRedraw = true;
-					debouncer.call(this);
-					//単にdebouncer()だとthisがグローバルオブジェクトになってしまう
+					debouncerRequestRefresh.call(this);
+					//単にdebouncerRequestRefresh()だとthisがグローバルオブジェクトになってしまう
 				}
 			}
 		}));
@@ -81,7 +78,7 @@ export class DailyNoteOutlineView extends ItemView {
 			if (file instanceof TFile){
 				if (getDateFromFile(file,"day")){
 					this.flagRegetAll = true;
-					debouncer.call(this);
+					debouncerRequestRefresh.call(this);
 				}
 			}
 		}));
@@ -90,7 +87,7 @@ export class DailyNoteOutlineView extends ItemView {
 			if (file instanceof TFile){
 				if (getDateFromFile(file,"day")){
 					this.flagRegetAll = true;
-					debouncer.call(this);
+					debouncerRequestRefresh.call(this);
 				}
 			}
 		}));
@@ -114,79 +111,88 @@ export class DailyNoteOutlineView extends ItemView {
 				// onsetDateが不正なら当日起点のbackward searchを行う
 				new Notice('onset date is invalid');
 				this.searchRange = {
-					latest : moment().add(this.settings.offset,'days'),
-					earliest: moment().subtract(this.settings.duration - 1,'days')
+					latest : moment().startOf('day').add(this.settings.offset,'days'),
+					earliest: moment().startOf('day').subtract(this.settings.duration - 1,'days')
 				};
 			}
 		}
 
 		if (this.settings.initialSearchType == 'backward'){
 			this.searchRange = {
-				latest : moment().add(this.settings.offset,'days'),
-				earliest: moment().subtract(this.settings.duration - 1,'days')
+				latest : moment().startOf('day').add(this.settings.offset,'days'),
+				earliest: moment().startOf('day').subtract(this.settings.duration - 1,'days')
 			};
 		}
 
-		this.arrayAll = this.getArrayAll();
-		this.targetFiles = this.getTargetFiles(this.arrayAll);
-		this.outlineData = await this.getOutline(this.targetFiles);
-		this.drawUI();
-		this.drawOutline(this.targetFiles, this.outlineData);
+		this.refreshView(true, true, true);
+
 	}
 
 	private async bootDelay(): Promise<void> {
 		return new Promise(resolve => { setTimeout(resolve, 200);});
 	}
 
-	// refresh outline if metadata of daily note changed / daily note was created or deleted
-	private async refreshOutline(){
-		if (this.flagRedraw || this.flagRegetAll){
-			if (this.flagRegetAll){
-				this.arrayAll = this.getArrayAll();
-				this.targetFiles = this.getTargetFiles(this.arrayAll);
-				this.flagRegetAll = false;
-			}
-			this.outlineData = await this.getOutline(this.targetFiles);
-			this.drawUI();
-			this.drawOutline(this.targetFiles, this.outlineData);
-			this.flagRedraw = false;
+	private async autoRefresh(){
+		if (!(this.flagRedraw || this.flagRegetAll)){
+			return;
 		}
+		this.refreshView(this.flagRegetAll, this.flagRegetAll, true);
+		this.flagRegetAll = false;
+		this.flagRedraw = false;
 	}
 
-	// Daily Note Interfaceで全デイリーノートデータを取得して、日付順の配列にする
-	private getArrayAll(): [string,TFile][]{ 
-		const allDailyNotes = getAllDailyNotes();
-		
-		const arrayAll:[string,TFile][] = Object.entries(allDailyNotes);
-		// 日付順にソート
-		arrayAll.sort((a,b)=>{
-			if (a[0]<b[0]){
-				return 1;
-			} else {
-				return -1;
-			}
-		});
-		return arrayAll; 
+	// リフレッシュセンター
+	// regetAllがtrue: 全デイリーノートを取得し直す
+	// getTargetがtrue: 現在の探索範囲に含まれるデイリーノートを特定
+	// getOutlineがtrue: 対象ファイル群のファイル情報、アウトライン情報を取得
+	// その後UI部分とアウトライン部分を描画
+	private async refreshView(regetAll: boolean, getTarget:boolean, getOutline:boolean){
+		if (regetAll){
+			this.allDailyNotes = getAllDailyNotes();
+		}
+		if (getTarget){
+			this.targetFiles = this.getTargetFiles(this.allDailyNotes);
+		}
+		if(getOutline){
+			this.fileInfo = await this.getFileInfo(this.targetFiles);
+			this.outlineData = await this.getOutline(this.targetFiles);
+		}
+		this.drawUI();
+		this.drawOutline(this.targetFiles, this.fileInfo, this.outlineData);
 	}
 
-	// arrayAllから探索範囲のデイリーノートを切り出す
-	private getTargetFiles(arrayAll:[string,TFile][]): TFile[] {
-		// 日数固定版
-		let i = 0;
+
+	// 取得した全デイリーノートから探索範囲のデイリーノートを切り出す
+	
+	private getTargetFiles(allFiles:Record<string,TFile>): TFile[]{
+		// 日数固定版 日付範囲のループによる探索
+		// review comment に基づく
 		let files: TFile[] = [];
-
-		while ( i < arrayAll.length){
-			const noteDate: moment = getDateFromFile(arrayAll[i][1], 'day');
-			if (noteDate.isSameOrBefore(this.searchRange.latest,'day')){
-				if (noteDate.isSameOrAfter(this.searchRange.earliest, 'day')){
-					files.push(arrayAll[i][1]);
-				} else {
-					break;
-				}
+		let checkDate = this.searchRange.latest.clone();
+		while (checkDate.isSameOrAfter(this.searchRange.earliest,'day')){
+			if (allFiles[`day-${checkDate.format()}`]){
+				files.push(allFiles[`day-${checkDate.format()}`]);
 			}
-			i++;
+			checkDate.subtract(1,'days');
 		}
 		return files;
+
+		// // 日数固定版
+		// let i = 0;
+		// let files: TFile[] = [];
+		// while ( i < arrayAll.length){
+		// 	const noteDate: moment = getDateFromFile(arrayAll[i][1], 'day');
+		// 	if (noteDate.isSameOrBefore(this.searchRange.latest,'day')){
+		// 		if (noteDate.isSameOrAfter(this.searchRange.earliest, 'day')){
+		// 			files.push(arrayAll[i][1]);
+		// 		} else {
+		// 			break;
+		// 		}
+		// 	}
+		// 	i++;
+		// }
+		// return files;
+
 
 		// 件数固定版
 		/*日数固定に移行したためコメントアウト
@@ -215,6 +221,23 @@ export class DailyNoteOutlineView extends ItemView {
 		this.endingDateTemp = getDateFromFile(targetFiles[targetFiles.length-1],"day");
 		return targetFiles;
 		*/
+	}
+
+	// デイリーノートの配列から各ファイルに関する情報を抽出
+	private async getFileInfo(files:TFile[]):Promise<FileInfo[]>{
+		let fileInfo:FileInfo[]=[];
+		for (let i=0; i < files.length ; i++){
+			const content = await this.app.vault.cachedRead(files[i]);
+			const lines = content.split("\n");
+			const info:FileInfo = {
+				date: getDateFromFile(files[i],'day'),
+				//content: content,
+				lines: lines,
+				numOfLines: lines.length
+			}
+			fileInfo.push(info);
+		}
+		return fileInfo;
 	}
 
 	// メタデータからアウトライン要素を抽出
@@ -246,7 +269,7 @@ export class DailyNoteOutlineView extends ItemView {
 					const element:OutlineData = {
 						typeOfElement : "link",
 						position : cache.links[j].position,
-						//マークダウンリンクに対応
+						//マークダウンリンク に対応
 						displayText : 
 							(cache.links[j].displayText =="") 
 							? cache.links[j].original.substring(1,cache.links[j].original.indexOf("]")) 
@@ -259,10 +282,6 @@ export class DailyNoteOutlineView extends ItemView {
 			
 			// console.log('check lists');
 			if (cache.hasOwnProperty("listItems")){
-				// テキストを分解(現状リストアイテムが無ければ不要)
-				const note = await this.app.vault.cachedRead(files[i]);
-				const lines = note.split("\n");
-				
 
 				for (let j=0; j< cache.listItems.length ; j++){
 					// parent が負の数であればルートレベルアイテム。
@@ -284,7 +303,7 @@ export class DailyNoteOutlineView extends ItemView {
 						const element:OutlineData = {
 						typeOfElement : "listItems",
 						position : cache.listItems[j].position,
-						displayText : lines[cache.listItems[j].position.start.line].replace(/^(\s|\t)*-\s(\[.+\]\s)*/,''),
+						displayText : this.fileInfo[i].lines[cache.listItems[j].position.start.line].replace(/^(\s|\t)*-\s(\[.+\]\s)*/,''),
 						level : (isTopLevel) ? 0 : 1
 						};
 						data[i].push(element);
@@ -332,12 +351,7 @@ export class DailyNoteOutlineView extends ItemView {
 				this.searchRange.latest = this.searchRange.earliest.clone().subtract(1,'days');
 				this.searchRange.earliest = this.searchRange.latest.clone().subtract(this.settings.duration - 1,'days');
 				
-				this.targetFiles = this.getTargetFiles(this.arrayAll);
-				this.outlineData = await this.getOutline(this.targetFiles);
-
-				this.drawUI();
-				this.drawOutline(this.targetFiles, this.outlineData);
-
+				this.refreshView(false, true, true);
 			}
 		);
 		//未来に移動
@@ -355,11 +369,7 @@ export class DailyNoteOutlineView extends ItemView {
 					this.searchRange.latest = this.searchRange.latest.add(this.settings.offset,'days');
 				}
 
-				this.targetFiles = this.getTargetFiles(this.arrayAll);
-				this.outlineData = await this.getOutline(this.targetFiles);
-
-				this.drawUI();
-				this.drawOutline(this.targetFiles, this.outlineData);
+				this.refreshView(false, true, true);
 			}
 		);
 
@@ -380,21 +390,17 @@ export class DailyNoteOutlineView extends ItemView {
 					} else {  
 						// onsetDateが不正なら当日起点のbackward searchを行う
 						new Notice('onset date is invalid');
-						this.searchRange.latest = moment().add(this.settings.offset,'days');
-						this.searchRange.earliest = moment().subtract(this.settings.duration - 1,'days')
+						this.searchRange.latest = moment().startOf('day').add(this.settings.offset,'days');
+						this.searchRange.earliest = moment().startOf('day').subtract(this.settings.duration - 1,'days')
 					}
 				}
 				
 				if (this.settings.initialSearchType == 'backward'){
-					this.searchRange.latest = moment().add(this.settings.offset,'days');
-					this.searchRange.earliest = moment().subtract(this.settings.duration - 1 ,'days');
+					this.searchRange.latest = moment().startOf('day').add(this.settings.offset,'days');
+					this.searchRange.earliest = moment().startOf('day').subtract(this.settings.duration - 1 ,'days');
 				} 
 				
-				this.targetFiles = this.getTargetFiles(this.arrayAll);
-				this.outlineData = await this.getOutline(this.targetFiles);
-
-				this.drawUI();
-				this.drawOutline(this.targetFiles, this.outlineData);
+				this.refreshView(false, true, true);
 			}
 		);
 		//リフレッシュ
@@ -413,25 +419,21 @@ export class DailyNoteOutlineView extends ItemView {
 					} else {  
 						// onsetDateが不正なら当日起点のbackward searchを行う
 						new Notice('onset date is invalid');
-						this.searchRange.latest = moment().add(this.settings.offset,'days');
-						this.searchRange.earliest = moment().subtract(this.settings.duration - 1,'days')
+						this.searchRange.latest = moment().startOf('day').add(this.settings.offset,'days');
+						this.searchRange.earliest = moment().startOf('day').subtract(this.settings.duration - 1,'days')
 					}
 				}
 				
 				if (this.settings.initialSearchType == 'backward'){
-					this.searchRange.latest = moment().add(this.settings.offset,'days');
-					this.searchRange.earliest = moment().subtract(this.settings.duration - 1 ,'days');
+					this.searchRange.latest = moment().startOf('day').add(this.settings.offset,'days');
+					this.searchRange.earliest = moment().startOf('day').subtract(this.settings.duration - 1 ,'days');
 				} 
-				this.arrayAll = this.getArrayAll();
-				this.targetFiles = this.getTargetFiles(this.arrayAll);
-				this.outlineData = await this.getOutline(this.targetFiles);
 
-				this.drawUI();
-				this.drawOutline(this.targetFiles, this.outlineData);
+				this.refreshView(true, true, true);
 			}
 		);
 			
-		// 日付
+		// 日付の範囲
 		const navDateRange: HTMLElement = navHeader.createDiv("nav-date-range");
 		const dateRange: string = this.searchRange.earliest.format("YYYY/MM/DD [-] ") + 
 			this.searchRange.latest.format( this.searchRange.earliest.isSame(this.searchRange.latest,'year') ?  "MM/DD": "YYYY/MM/DD");
@@ -443,7 +445,7 @@ export class DailyNoteOutlineView extends ItemView {
 	}
 
 	//  アウトライン描画	
-	private drawOutline( files: TFile[], data: OutlineData[][]):void {
+	private drawOutline( files: TFile[], info: FileInfo[], data: OutlineData[][]):void {
 
 		const containerEl: HTMLElement = createDiv("nav-files-container node-insert-event");
 		const rootEl: HTMLElement = containerEl.createDiv("nav-folder mod-root"); 
@@ -471,6 +473,22 @@ export class DailyNoteOutlineView extends ItemView {
 			*/
 			
 			dailyNoteTitleEl.createDiv("nav-dailynote-title-content").setText(files[i].basename);
+			
+			//ファイル名の後の情報を表示
+
+			switch (this.settings.displayFileInfo) {
+				case 'lines':
+					dailyNoteTitleEl.dataset.subinfo = info[i].numOfLines.toString();
+					break;
+				case 'days':
+					let basedate = (this.settings.initialSearchType == "backward")? moment(): this.settings.onset;
+					dailyNoteTitleEl.dataset.subinfo = Math.abs(info[i].date.diff(basedate,'days')).toString();
+					break;
+				case 'none':
+					break;
+				default:
+					break;
+			}
 
 			//ノートタイトルをクリックしたらそのファイルをopen
 			dailyNoteTitleEl.addEventListener(
@@ -483,9 +501,10 @@ export class DailyNoteOutlineView extends ItemView {
 			);
 
 			//アウトライン要素の描画。data[i]が要素0ならスキップ
+			//二重ループから抜けるためラベルelementloopをつけた
 			if (data[i].length > 0){
-				for (let j=0; j<data[i].length; j++){
-					//フィルタリング
+				elementloop: for (let j=0; j<data[i].length; j++){
+					//// フィルタリング filtering
 
 					//要素ごとの非表示判定  設定で非表示になっていればスキップ
 					const element = data[i][j].typeOfElement;
@@ -493,16 +512,55 @@ export class DailyNoteOutlineView extends ItemView {
 						continue;
 					}
 					//// 要素種別ごとの処理
-					// 特定の見出しレベルが非表示の場合、該当すればスキップ
+					
+					// headings
 					if (element == 'heading'){
+						// 特定の見出しレベルが非表示の場合、該当すればスキップ
 						if ( !this.settings.headingLevel[data[i][j].level - 1]){
 							continue;
 						}
+						
+						// 除外ワードにマッチすればスキップ
+						for (const value of this.settings.headingsToIgnore){
+							if ( (value) && data[i][j].displayText.includes(value)){
+								continue elementloop;
+							}
+						}
 					}
-					// トップ以外のリストアイテムが非表示の場合、該当すればスキップ
-					if (element == 'listItems' && (!this.settings.allRootItems)){
-						if (!(data[i][j].level == 0)){
-							continue;
+
+					// links
+					if (element == 'link'){
+						for (const value of this.settings.linksToIgnore){
+							if ( (value) && data[i][j].displayText.includes(value)){
+								continue elementloop;
+							}
+						}
+					}
+
+					// tags
+					if (element == 'tag'){
+						for (const value of this.settings.tagsToIgnore){
+							if ( (value) && data[i][j].displayText.includes(value)){
+								continue elementloop;
+							}
+						}
+					}
+
+
+					// listItems
+					if (element == 'listItems'){
+						// トップ以外のリストアイテムが非表示の場合、該当すればスキップ
+						if (!this.settings.allRootItems){
+							if (!(data[i][j].level == 0)){
+								continue;
+							}
+						}
+
+						// 除外ワードにマッチすればスキップ
+						for (const value of this.settings.listItemsToIgnore){
+							if ( (value) && data[i][j].displayText.includes(value)){
+								continue elementloop;
+							}
 						}
 					}
 
@@ -511,7 +569,7 @@ export class DailyNoteOutlineView extends ItemView {
 							.createDiv("nav-outline");
 					//中身を設定
 					const outlineTitle: HTMLElement = outlineEl.createDiv("nav-file-title nav-action-button");
-					//アイコン
+					//アイコン icon
 					switch (element){
 						case 'link':
 							setIcon(outlineTitle,"link");
@@ -555,20 +613,42 @@ export class DailyNoteOutlineView extends ItemView {
 						false
 					);
 
-					//hover preview 該当部分のみ表示したいけどやり方がわからなかった。
+					//hover preview 
 					outlineTitle.addEventListener('mouseover', (event: MouseEvent) => {
 						this.app.workspace.trigger('hover-link', {
 							event,
 							source: DailyNoteOutlineViewType,
 							hoverParent: rootEl,
 							targetEl: outlineTitle,
-							linktext: files[i].path
+							linktext: files[i].path,
+							state:{scroll: data[i][j].position.start.line}
 						});
 					});
 
 				}
 			} else {
 				//要素0だったときの処理
+				//各行をチェックし、空行でない初めの行を表示する
+				for (let j = 0; j < info[i].lines.length; j++){
+					if (info[i].lines[j] == ""){
+						continue;
+					} else {
+						const outlineEl: HTMLElement = dailyNoteChildrenEl
+								.createDiv("nav-outline");
+						const outlineTitle: HTMLElement = outlineEl.createDiv("nav-file-title nav-action-button");
+						outlineTitle.createDiv("nav-outline-title-content").setText(info[i].lines[j]);
+						outlineTitle.addEventListener(
+							"click",
+							async(event: MouseEvent) => {
+								event.preventDefault();
+								await this.app.workspace.getLeaf().openFile(files[i]);
+							},
+							false
+						);
+						break;
+					}
+				}
+				
 			}
 
 		}
