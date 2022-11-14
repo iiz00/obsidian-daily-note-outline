@@ -99,6 +99,7 @@ I also searched and referred to a bunch of posts in plugin-dev channel on Discor
 - partially
 	- better preview
 	- filter
+
 ## Changelog
 - 0.2.0
 	- New functions
