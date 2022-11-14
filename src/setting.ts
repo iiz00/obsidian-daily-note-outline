@@ -77,10 +77,11 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                 text
                     .setPlaceholder(String(DEFAULT_SETTINGS.offset))
                     .setValue(String(this.plugin.settings.offset))
+                    /*
                     .onChange(async (value) =>{
                         this.plugin.settings.offset = Number(value);
                         await this.plugin.saveSettings();
-                    })
+                    }) */
                 text.inputEl.onblur = async (e: FocusEvent) => {
                     let inputedValue = Number((e.target as HTMLInputElement).value);
                     if (inputedValue < 0){
@@ -189,6 +190,23 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
 
             });
 
+        // 表示する情報
+        new Setting(containerEl)
+        .setName("display file information")
+        .setDesc("display the number of lines of the file / days from the base date with the file name")
+        .addDropdown((dropdown) => {
+            dropdown
+                .addOption("none", "none")
+                .addOption("lines","lines")
+                .addOption("days","days")
+                .setValue(this.plugin.settings.displayFileInfo)
+                .onChange(async (value) => {
+                  this.plugin.settings.displayFileInfo = value;
+                  this.display();
+                  await this.plugin.saveSettings();
+                })
+        });
+
         //表示する見出しレベル
         this.containerEl.createEl("h4", {
             text: "Heading level to display",
@@ -207,22 +225,59 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                 });
         });
 
-        // 表示する情報
-        new Setting(containerEl)
-        .setName("display file information")
-        .setDesc("display the number of lines of the file / days from the base date with the file name")
-        .addDropdown((dropdown) => {
-            dropdown
-                .addOption("none", "none")
-                .addOption("lines","lines")
-                .addOption("days","days")
-                .setValue(this.plugin.settings.displayFileInfo)
-                .onChange(async (value) => {
-                  this.plugin.settings.displayFileInfo = value;
-                  this.display();
-                  await this.plugin.saveSettings();
-                })
+
+
+        // フィルター
+        this.containerEl.createEl("h4", {
+            text: "Filter",
         });
+        new Setting(containerEl)
+        .setName("headings to ignore")
+        .setDesc("Headings which include listed words will not be displayed. Separate with a new line.")
+        .addTextArea((textArea) =>{
+            textArea.setValue(this.plugin.settings.headingsToIgnore.join('\n'));
+            textArea.inputEl.onblur = async (e: FocusEvent ) => {
+                const inputedValue = (e.target as HTMLInputElement).value;
+                this.plugin.settings.headingsToIgnore = inputedValue.split('\n');
+                await this.plugin.saveSettings();
+            }
+        })
+
+        new Setting(containerEl)
+        .setName("links to ignore")
+        .setDesc("Links which include listed words will not be displayed. Separate with a new line.")
+        .addTextArea((textArea) =>{
+            textArea.setValue(this.plugin.settings.linksToIgnore.join('\n'));
+            textArea.inputEl.onblur = async (e: FocusEvent ) => {
+                const inputedValue = (e.target as HTMLInputElement).value;
+                this.plugin.settings.linksToIgnore = inputedValue.split('\n');
+                await this.plugin.saveSettings();
+            }
+        })
+
+        new Setting(containerEl)
+        .setName("tags to ignore")
+        .setDesc("tags which include listed words will not be displayed. Separate with a new line.")
+        .addTextArea((textArea) =>{
+            textArea.setValue(this.plugin.settings.tagsToIgnore.join('\n'));
+            textArea.inputEl.onblur = async (e: FocusEvent ) => {
+                const inputedValue = (e.target as HTMLInputElement).value;
+                this.plugin.settings.tagsToIgnore = inputedValue.split('\n');
+                await this.plugin.saveSettings();
+            }
+        })
+
+        new Setting(containerEl)
+        .setName("list items to ignore")
+        .setDesc("List items which include listed words will not be displayed. Separate with a new line.")
+        .addTextArea((textArea) =>{
+            textArea.setValue(this.plugin.settings.listItemsToIgnore.join('\n'));
+            textArea.inputEl.onblur = async (e: FocusEvent ) => {
+                const inputedValue = (e.target as HTMLInputElement).value;
+                this.plugin.settings.listItemsToIgnore = inputedValue.split('\n');
+                await this.plugin.saveSettings();
+            }
+        })
 
     }
 }

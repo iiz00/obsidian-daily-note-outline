@@ -12,9 +12,9 @@ import { DailyNoteOutlineSettingTab } from 'src/setting'
 // 設定項目
 export interface DailyNoteOutlineSettings {
 	initialSearchType: string; //forward or backward 特定日から前方探索or当日から後方探索
-	offset: number;		// 未来の日付も含む場合何日分含めるか
-	onset: string;		// 特定日からforwardに探索する場合の起点日
-	duration: number;	// 探索日数
+	offset: number;		// 未来の日付も含む場合何日分含めるか number of future days to show 
+	onset: string;		// 特定日からforwardに探索する場合の起点日 onset date
+	duration: number;	// 探索日数 number of days to search per page
 	showElements:{
 		heading: boolean,
 		link: boolean,
@@ -24,6 +24,11 @@ export interface DailyNoteOutlineSettings {
 	headingLevel: boolean[];
 	allRootItems: boolean;
 	displayFileInfo: string; // none || lines || days
+
+	headingsToIgnore: string[];  // filter
+	linksToIgnore: string[];
+	tagsToIgnore: string[];
+	listItemsToIgnore: string[];
 
 }
 
@@ -42,8 +47,12 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 	
 	headingLevel: [true, true, true, true, true, true],
 	allRootItems: true,
-	displayFileInfo: 'lines'
+	displayFileInfo: 'lines',
 
+	headingsToIgnore: [],
+	linksToIgnore: [],
+	tagsToIgnore: [],
+	listItemsToIgnore: [],
 }
 
 export interface FileInfo {
@@ -93,37 +102,40 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 			}
 		});
 		
-		// get Today's Note: DailyNoteInterfaceのtestのためのコマンド。
+		// get Today's Note: DailyNoteInterfaceのtestのための開発用コマンド。
 		// 全DailyNoteを取得したのち、本日分を取得して、consoleに表示する。
-		/*
-		this.addCommand({
-			id: 'daily-note-outline-getTodaysNote',
-			name: "Get Today's Note",
-			callback: async ()=>{
-				// 全てのデイリーノートを取得
-				const allDailyNotes = getAllDailyNotes();
-				console.log(allDailyNotes);
+		
+		// this.addCommand({
+		// 	id: 'daily-note-outline-getTodaysNote',
+		// 	name: "Get Today's Note",
+		// 	callback: async ()=>{
+		// 		// 全てのデイリーノートを取得
+		// 		const allDailyNotes = getAllDailyNotes();
+		// 		console.log(allDailyNotes);
+		// 		console.log(typeof allDailyNotes);
+		// 		console.log('momentそのまま',moment());
+		// 		console.log(`DailyNoteInterfaceのキーの形式に。day-${moment().startOf('day').format()}`);
 
-				//本日のデイリーノートを取得
-				const todaysNote = getDailyNote(moment(), allDailyNotes);
-				if (todaysNote){
-					console.log(todaysNote)
-					// 日付の取得
-					const noteDate = getDateFromFile(todaysNote,"day");
-					console.log(`日付は ${noteDate}です`);
+		// 		//本日のデイリーノートを取得
+		// 		const todaysNote = getDailyNote(moment(), allDailyNotes);
+		// 		if (todaysNote){
+		// 			console.log(todaysNote)
+		// 			// 日付の取得
+		// 			const noteDate = getDateFromFile(todaysNote,"day");
+		// 			console.log(`日付は ${noteDate}です`);
 					
-					const cache = this.app.metadataCache.getFileCache(todaysNote);
-					console.log('cache:', cache);
+		// 			const cache = this.app.metadataCache.getFileCache(todaysNote);
+		// 			console.log('cache:', cache);
 
-					const note = this.app.vault.cachedRead(todaysNote);
-					console.log(note);
+		// 			const note = this.app.vault.cachedRead(todaysNote);
+		// 			console.log(note);
 
-				} else {
-					console.log('今日のノートがみあたりません');
-				}
-			}
-		});
-		*/
+		// 		} else {
+		// 			console.log('今日のノートがみあたりません');
+		// 		}
+		// 	}
+		// });
+		
 
 	// This adds a settings tab so the user can configure various aspects of the plugin
 	this.addSettingTab(new DailyNoteOutlineSettingTab(this.app, this));
