@@ -27,6 +27,10 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
             });
         }
 
+        this.containerEl.createEl("h4", {
+            text: "Basics",
+        });
+
         new Setting(containerEl)
             .setName("Initial search type")
             .setDesc("search backward from today / forward from a specific date")
@@ -192,7 +196,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
 
         // 表示する情報
         new Setting(containerEl)
-        .setName("display file information")
+        .setName("Display file information")
         .setDesc("display the number of lines of the file / days from the base date with the file name")
         .addDropdown((dropdown) => {
             dropdown
@@ -207,8 +211,12 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                 })
         });
 
+        
         //表示する見出しレベル
         this.containerEl.createEl("h4", {
+            text: "Headings",
+        });
+        this.containerEl.createEl("h5", {
             text: "Heading level to display",
         });
         this.plugin.settings.headingLevel.forEach( (value, index, arry) => {
@@ -225,7 +233,55 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                 });
         });
 
+        // プレビュー
+        this.containerEl.createEl("h4", {
+            text: "Preview",
+        });
 
+        new Setting(containerEl)
+        .setName("inline preview")
+        .setDesc("Show a few subsequent words next to the outline element name")
+        .addToggle((toggle) => {
+            toggle
+                .setValue(this.plugin.settings.inlinePreview)
+                .onChange(async (value) => {
+                    this.plugin.settings.inlinePreview = value;
+                    this.display();
+                    await this.plugin.saveSettings();
+                })
+
+        });
+
+        new Setting(containerEl)
+        .setName("tooltip preview")
+        .setDesc("Show subsequent sentences as a tooltip when hover")
+        .addToggle((toggle) => {
+            toggle
+                .setValue(this.plugin.settings.tooltipPreview)
+                .onChange(async (value) => {
+                    this.plugin.settings.tooltipPreview = value;
+                    this.display();
+                    await this.plugin.saveSettings();
+                })
+
+        });
+
+        new Setting(containerEl)
+        .setName("tooltip preview direction")
+        .setDesc("specify the direction to display tooltip preview")
+        .addDropdown((dropdown) => {
+            dropdown
+                .addOption("left", "left")
+                .addOption("right","right")
+                .addOption("bottom","bottom")
+                .addOption("top","top")
+                .setValue(this.plugin.settings.tooltipPreviewDirection)
+                .onChange(async (value) => {
+                  this.plugin.settings.tooltipPreviewDirection = value;
+                  this.display();
+                  await this.plugin.saveSettings();
+                })
+        });
 
         // フィルター
         this.containerEl.createEl("h4", {

@@ -432,12 +432,41 @@ export class DailyNoteOutlineView extends ItemView {
 				this.refreshView(true, true, true);
 			}
 		);
+		// 設定
+		navActionButton = navButtonContainer.createDiv("clickable-icon nav-action-button");
+		navActionButton.ariaLabel = "open settings";
+		setIcon(navActionButton,"settings",20);
+		navActionButton.addEventListener(
+			"click",
+			async (event:MouseEvent) =>{
+				this.app.setting.open();
+				this.app.setting.openTabById(this.plugin.manifest.id);
+			}
+		);
+
 			
 		// 日付の範囲
 		const navDateRange: HTMLElement = navHeader.createDiv("nav-date-range");
 		const dateRange: string = this.searchRange.earliest.format("YYYY/MM/DD [-] ") + 
 			this.searchRange.latest.format( this.searchRange.earliest.isSame(this.searchRange.latest,'year') ?  "MM/DD": "YYYY/MM/DD");
 		navDateRange.createDiv("nav-date-range-content").setText(dateRange);
+
+		navDateRange.addEventListener(
+			"click",
+			async (event:MouseEvent) =>{
+				event.preventDefault();
+				const onsetDate = moment(this.settings.onset,"YYYY-MM-DD");
+				if (onsetDate.isValid()){
+					this.searchRange.earliest = onsetDate;
+					this.searchRange.latest = onsetDate.clone().add(this.settings.duration -1,'days');
+				} else {  
+					// onsetDateが不正なら当日起点のbackward searchを行う
+					this.searchRange.latest = moment().startOf('day').add(this.settings.offset,'days');
+					this.searchRange.earliest = moment().startOf('day').subtract(this.settings.duration - 1,'days')
+				}
+				this.refreshView(false, true, true);
+			}
+		);
 
 		// 描画実行
 		this.contentEl.empty();
@@ -472,7 +501,7 @@ export class DailyNoteOutlineView extends ItemView {
 			}
 			*/
 			
-			dailyNoteTitleEl.createDiv("nav-dailynote-title-content").setText(files[i].basename);
+			dailyNoteTitleEl.createDiv("nav-folder-title-content").setText(files[i].basename);
 			
 			//ファイル名の後の情報を表示
 
@@ -503,6 +532,9 @@ export class DailyNoteOutlineView extends ItemView {
 			//アウトライン要素の描画。data[i]が要素0ならスキップ
 			//二重ループから抜けるためラベルelementloopをつけた
 			if (data[i].length > 0){
+
+				// let previewText3:string ='';  // ツールチッププレビュー用  使わないかも。
+
 				elementloop: for (let j=0; j<data[i].length; j++){
 					//// フィルタリング filtering
 
@@ -566,7 +598,7 @@ export class DailyNoteOutlineView extends ItemView {
 
 					//アウトライン要素部分作成
 					const outlineEl: HTMLElement = dailyNoteChildrenEl
-							.createDiv("nav-outline");
+							.createDiv("nav-file");
 					//中身を設定
 					const outlineTitle: HTMLElement = outlineEl.createDiv("nav-file-title nav-action-button");
 					//アイコン icon
@@ -585,8 +617,49 @@ export class DailyNoteOutlineView extends ItemView {
 					}
 
 					//要素ごとのテキスト
-					outlineTitle.createDiv("nav-outline-title-content").setText(data[i][j].displayText);
+					outlineTitle.createDiv("nav-file-title-content").setText(data[i][j].displayText);
 
+					// インラインプレビュー
+					//アウトライン要素のあとに文字列が続く場合その行をプレビュー、そうでなければ次の行をプレビュー
+					if (this.settings.inlinePreview) {
+						let previewText: string ='';
+						if (data[i][j].position.end.col < info[i].lines[ data[i][j].position.start.line ].length){
+							previewText = info[i].lines[ data[i][j].position.start.line ];
+						} else {
+							previewText = ( data[i][j].position.start.line < info[i].numOfLines -1 )?
+								info[i].lines[ data[i][j].position.start.line + 1] : ""; 
+						}
+						outlineTitle.createDiv("nav-file-title-preview").setText(previewText);
+					}
+					// ツールチッププレビュー
+					// その要素の行から次の要素の前までをプレビュー
+					if (this.settings.tooltipPreview){
+						let previewText2:string ='';
+						// まず次の表示要素の引数を特定
+						let endLine:Number = info[i].numOfLines - 1;  //初期値は文章末
+						let k = j +1; // 現在のアウトライン引数+1からループ開始
+						while (k< data[i].length) {
+							//表示するエレメントタイプであれば行を取得してループを打ち切る
+							if (this.settings.showElements[data[i][k].typeOfElement]){
+								//ただし非トップのルートレベルリストアイテムの場合、非表示になっているので打ち切らない
+								if (!(data[i][k].typeOfElement == 'listItems' && this.settings.allRootItems == false && data[i][k].level ==1)){
+									endLine = data[i][k].position.start.line -1;
+									break;
+								}
+							}
+							k++;
+						}
+						for (let l = data[i][j].position.start.line; l <= endLine; l++){
+							previewText2 = previewText2 + info[i].lines[l] +'\n';
+						}
+						// 空行を除去
+						previewText2 = previewText2.replace(/\n$|\n(?=\n)/g,'');
+						outlineTitle.ariaLabel = previewText2;
+						outlineTitle.setAttribute('aria-label-position',this.settings.tooltipPreviewDirection);
+						outlineTitle.setAttribute('aria-label-classes','daily-note-preview');
+					}
+					
+					
 					outlineTitle.addEventListener(
 						"click",
 						async(event: MouseEvent) => {
@@ -634,9 +707,9 @@ export class DailyNoteOutlineView extends ItemView {
 						continue;
 					} else {
 						const outlineEl: HTMLElement = dailyNoteChildrenEl
-								.createDiv("nav-outline");
+								.createDiv("nav-file");
 						const outlineTitle: HTMLElement = outlineEl.createDiv("nav-file-title nav-action-button");
-						outlineTitle.createDiv("nav-outline-title-content").setText(info[i].lines[j]);
+						outlineTitle.createDiv("nav-file-title-content").setText(info[i].lines[j]);
 						outlineTitle.addEventListener(
 							"click",
 							async(event: MouseEvent) => {
