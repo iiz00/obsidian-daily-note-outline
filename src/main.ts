@@ -30,6 +30,10 @@ export interface DailyNoteOutlineSettings {
 	tagsToIgnore: string[];
 	listItemsToIgnore: string[];
 
+	inlinePreview: boolean;
+	tooltipPreview: boolean;
+	tooltipPreviewDirection: string; // left || right
+
 }
 
 // 設定項目デフォルト
@@ -53,6 +57,10 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 	linksToIgnore: [],
 	tagsToIgnore: [],
 	listItemsToIgnore: [],
+
+	inlinePreview: true,
+	tooltipPreview: true,
+	tooltipPreviewDirection: 'left'
 }
 
 export interface FileInfo {
@@ -102,8 +110,8 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 			}
 		});
 		
-		// get Today's Note: DailyNoteInterfaceのtestのための開発用コマンド。
-		// 全DailyNoteを取得したのち、本日分を取得して、consoleに表示する。
+		// // get Today's Note: DailyNoteInterfaceのtestのための開発用コマンド。
+		// // 全DailyNoteを取得したのち、本日分を取得して、consoleに表示する。
 		
 		// this.addCommand({
 		// 	id: 'daily-note-outline-getTodaysNote',

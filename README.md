@@ -45,7 +45,9 @@ When backward search is used, daily notes of the specified number of days in the
 
 ### Onset date
 For forward search, specify the date in YYYY-MM-DD format to start the search at startup.
+Clicking on the date range under UI buttons jumps to the date.
 サーチタイプがforward search のとき起動時に探索開始する日付をYYYY-MM-DDの形式で指定します。
+また、UIボタンの下の日付範囲の表示をクリックしてもこの日にジャンプします。
 
 ### Show headings / links / tags / list items 
 Choose whether each element should be displayed in outline.
@@ -67,6 +69,19 @@ days: 基準日からの日数(backward searchでは今日、forward searchで�
 Choose whether each level of headings should be displayed in outline.
 各レベルの見出しをアウトラインとして表示するかそれぞれ指定します。
 
+### Inline Preview
+Show a few subsequent words next to each outline elements.
+アウトライン要素の右に、続く数単語を表示します。
+
+### Tooltip Preview
+Show subsequent sentences as a tooltip with mouse hover.
+アウトライン要素にマウスカーソルを合わせると、続く文章をツールチップとして表示します。
+
+### Tooltip Preview direction
+Specify the direction to display the tooltip preview.
+(I couldn't find the way to automatically determine appropriate direction...)
+ツールチッププレビューを表示する方向を指定します(自動で振り分けたかったけどやり方が分かりませんでした…)
+
 ### Filter
 If each outline element contains a specified word or phrase, that outline element will not be displayed.
 Specify one per line.
@@ -85,9 +100,7 @@ I also searched and referred to a bunch of posts in plugin-dev channel on Discor
 
 ## (want) to do
 - collapse a note
-- UI button for change settings
 - better appearance
-- better preview
 - filter / extract
 - note refactoring
 - show linked mentions / created / modefied files on each day (feasible in terms of performance?)
@@ -96,11 +109,24 @@ I also searched and referred to a bunch of posts in plugin-dev channel on Discor
 ### done
 - show number of lines of each note
 - show the first section if no outline element exists
+- UI button for change settings
 - partially
 	- better preview
 	- filter
 
 ## Changelog
+- 0.3.0
+	- New functions
+		- 2 new ways to preview
+			- 1. Inline Preview
+				- show a few subsequent words next to each outline element
+			- 2. Tooltip Preview
+				- show subsequent sentences as a tooltip with mouse hover
+	- Improvements
+		- added a UI button to open plugin setting
+		- click on the date range to jump to Onset date(specified in the setting).
+	- Fixed
+		fixed long name items overflowing
 - 0.2.0
 	- New functions
 		- filtering outline element by word or phrase
