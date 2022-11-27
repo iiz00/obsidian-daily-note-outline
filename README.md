@@ -7,6 +7,7 @@ This plugin creates a custom view that displays the outlines of multiple daily n
 
 ![screenshot](others/screenshot.png)
 
+
 ## Getting started
 Install the plugin from the community plugin list.
 Make sure Daily Note core plugin is enabled.
