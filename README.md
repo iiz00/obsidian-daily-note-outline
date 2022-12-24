@@ -1,5 +1,6 @@
 # Obsidian Daily Note Outline
-Daily notes are a good place to write down various little notes and thoughts. However, it can be difficult to find which daily note you wrote them in later.
+Daily notes are a good place to write down various little notes and thoughts. However, sometimes it can be difficult to find which daily note you wrote them in later.
+
 This plugin creates a custom view that displays the outlines of multiple daily notes at once. The outline can display not only headings, but also links, tags and list items.
 
 デイリーノートはちょっとしたメモや雑多な考えを書き留めるのに便利です。しかし、後からどこに書いたのか探すのに苦労することがあります。
