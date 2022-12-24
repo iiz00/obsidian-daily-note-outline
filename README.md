@@ -35,10 +35,15 @@ I recommend that you first set the display/hide settings for each outline elemen
 
 ## simple filter / include / exclude
 (I'm not good at English, so many of terms and explanations here might be difficult to understand. I would appreciate your feedback if the terminology or explanations are not correct!)
+
 In order to hide unnecessary items and display only the necessary ones, three types of filter functions are implemented: Simple filter, Include, and Exclude.
+
 Simple filter simply hides items that match a specified word or phrase. The hierarchy of items is not taken into account.
+
 Include can be applied to only one type of outline element. It treats the range from the outline element of the specified type to the next similar element as a block, and only items matching the specified word or phrase and belonging to that block are displayed.
+
 Conversely, Exclude hides matching items and their blocks. If you specify an element type in the "excluding ends at" section of the settings, or if Include is enabled, the block is considered to have ended at that element, and only that part of the block is hidden.
+
 Include and Exclude can be used at the same time. (However, it does not make sense to specify the exclude keyword for an element type that is specified in Include.)
 Simple filter can be used in conjunction with other filters. For example, if you specify the same keywords as those specified for Include, you can display only the elements that belong to the elements matched the include keywords, not the elements themselves.
 
