@@ -216,12 +216,12 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
         this.containerEl.createEl("h4", {
             text: "Headings",
         });
-        this.containerEl.createEl("h5", {
+        this.containerEl.createEl("p", {
             text: "Heading level to display",
         });
         this.plugin.settings.headingLevel.forEach( (value, index, arry) => {
             new Setting(containerEl)
-                .setName(`level${ index + 1}`)
+                .setName(`Level${ index + 1}`)
                 .addToggle((toggle)=> {
                     toggle
                         .setValue(this.plugin.settings.headingLevel[index])
@@ -239,7 +239,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
         });
 
         new Setting(containerEl)
-        .setName("inline preview")
+        .setName("Inline preview")
         .setDesc("Show a few subsequent words next to the outline element name")
         .addToggle((toggle) => {
             toggle
@@ -253,7 +253,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
         });
 
         new Setting(containerEl)
-        .setName("tooltip preview")
+        .setName("Tooltip preview")
         .setDesc("Show subsequent sentences as a tooltip when hover")
         .addToggle((toggle) => {
             toggle
@@ -267,7 +267,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
         });
 
         new Setting(containerEl)
-        .setName("tooltip preview direction")
+        .setName("Tooltip preview direction")
         .setDesc("specify the direction to display tooltip preview")
         .addDropdown((dropdown) => {
             dropdown
@@ -285,55 +285,174 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
 
         // フィルター
         this.containerEl.createEl("h4", {
-            text: "Filter",
+            text: "Simple filter",
         });
         new Setting(containerEl)
-        .setName("headings to ignore")
+        .setName("Headings to ignore")
         .setDesc("Headings which include listed words will not be displayed. Separate with a new line.")
         .addTextArea((textArea) =>{
-            textArea.setValue(this.plugin.settings.headingsToIgnore.join('\n'));
+            textArea.setValue(this.plugin.settings.wordsToIgnore.heading.join('\n'));
             textArea.inputEl.onblur = async (e: FocusEvent ) => {
                 const inputedValue = (e.target as HTMLInputElement).value;
-                this.plugin.settings.headingsToIgnore = inputedValue.split('\n');
+                this.plugin.settings.wordsToIgnore.heading = inputedValue.split('\n');
                 await this.plugin.saveSettings();
             }
-        })
+        });
 
         new Setting(containerEl)
-        .setName("links to ignore")
+        .setName("Links to ignore")
         .setDesc("Links which include listed words will not be displayed. Separate with a new line.")
         .addTextArea((textArea) =>{
-            textArea.setValue(this.plugin.settings.linksToIgnore.join('\n'));
+            textArea.setValue(this.plugin.settings.wordsToIgnore.link.join('\n'));
             textArea.inputEl.onblur = async (e: FocusEvent ) => {
                 const inputedValue = (e.target as HTMLInputElement).value;
-                this.plugin.settings.linksToIgnore = inputedValue.split('\n');
+                this.plugin.settings.wordsToIgnore.link = inputedValue.split('\n');
                 await this.plugin.saveSettings();
             }
-        })
+        });
 
         new Setting(containerEl)
-        .setName("tags to ignore")
+        .setName("Tags to ignore")
         .setDesc("tags which include listed words will not be displayed. Separate with a new line.")
         .addTextArea((textArea) =>{
-            textArea.setValue(this.plugin.settings.tagsToIgnore.join('\n'));
+            textArea.setValue(this.plugin.settings.wordsToIgnore.tag.join('\n'));
             textArea.inputEl.onblur = async (e: FocusEvent ) => {
                 const inputedValue = (e.target as HTMLInputElement).value;
-                this.plugin.settings.tagsToIgnore = inputedValue.split('\n');
+                this.plugin.settings.wordsToIgnore.tag = inputedValue.split('\n');
                 await this.plugin.saveSettings();
             }
-        })
+        });
 
         new Setting(containerEl)
-        .setName("list items to ignore")
+        .setName("List items to ignore")
         .setDesc("List items which include listed words will not be displayed. Separate with a new line.")
         .addTextArea((textArea) =>{
-            textArea.setValue(this.plugin.settings.listItemsToIgnore.join('\n'));
+            textArea.setValue(this.plugin.settings.wordsToIgnore.listItems.join('\n'));
             textArea.inputEl.onblur = async (e: FocusEvent ) => {
                 const inputedValue = (e.target as HTMLInputElement).value;
-                this.plugin.settings.listItemsToIgnore = inputedValue.split('\n');
+                this.plugin.settings.wordsToIgnore.listItems = inputedValue.split('\n');
                 await this.plugin.saveSettings();
             }
-        })
+        });
 
+        // Include / Exclude
+        this.containerEl.createEl("h4", {
+            text: "Include",
+        });
+        this.containerEl.createEl("p", {
+            text: "If you specify one type of outline elements and words to include, only elements which belong to the included elements are displayed."
+        });
+        new Setting(containerEl)
+        .setName("Element type for include")
+        .addDropdown((dropdown) => {
+            dropdown
+                .addOption("none", "none")
+                .addOption("heading","heading")
+                .addOption("link","link")
+                .addOption("tag","tag")
+                .addOption("listItems","listItems")
+                .setValue(this.plugin.settings.includeOnly)
+                .onChange(async (value) => {
+                  this.plugin.settings.includeOnly = value;
+                  this.display();
+                  await this.plugin.saveSettings();
+                })
+        });
+        new Setting(containerEl)
+        .setName("Words to include")
+        .setDesc("Only elements specified in 'Include only' which include listed words will be displayed. Separate with a new line.")
+        .addTextArea((textArea) =>{
+            textArea.setValue(this.plugin.settings.wordsToInclude.join('\n'));
+            textArea.inputEl.onblur = async (e: FocusEvent ) => {
+                const inputedValue = (e.target as HTMLInputElement).value;
+                this.plugin.settings.wordsToInclude = inputedValue.split('\n');
+                await this.plugin.saveSettings();
+            }
+        });
+
+        new Setting(containerEl)
+        .setName("Include the beginning part")
+        .setDesc("Specify whether to include the beginning parts of each daily note with no element to include ")
+        .addToggle((toggle) => {
+            toggle
+                .setValue(this.plugin.settings.includeBeginning)
+                .onChange(async (value) => {
+                    this.plugin.settings.includeBeginning = value;
+                    this.display();
+                    await this.plugin.saveSettings();
+                })
+
+        });
+
+        this.containerEl.createEl("h4", {
+            text: "Exclude",
+        });
+        this.containerEl.createEl("p", {
+            text: "Specified outline elements and elements belonging to that element will not be displayed."
+        });
+        new Setting(containerEl)
+        .setName("Excluding ends at")
+        .setDesc("Excluding elements specified below ends at the selected type of elements. If you specified 'Element type for include' above, this value is ignored and excludeing elements ends at that type of elements.")
+        .addDropdown((dropdown) => {
+            dropdown
+                .addOption("none", "none")
+                .addOption("heading","heading")
+                .addOption("link","link")
+                .addOption("tag","tag")
+                .addOption("listItems","listItems")
+                .setValue(this.plugin.settings.primeElement)
+                .onChange(async (value) => {
+                  this.plugin.settings.primeElement = value;
+                  this.display();
+                  await this.plugin.saveSettings();
+                })
+        });
+        new Setting(containerEl)
+        .setName("Headings to exclude")
+        .setDesc("Headings which include listed words and elements which belong to them will not be displayed. Separate with a new line.")
+        .addTextArea((textArea) =>{
+            textArea.setValue(this.plugin.settings.wordsToExclude.heading.join('\n'));
+            textArea.inputEl.onblur = async (e: FocusEvent ) => {
+                const inputedValue = (e.target as HTMLInputElement).value;
+                this.plugin.settings.wordsToExclude.heading = inputedValue.split('\n');
+                await this.plugin.saveSettings();
+            }
+        });
+
+        new Setting(containerEl)
+        .setName("Links to exclude")
+        .setDesc("Links which include listed words and elements which belong to them will not be displayed. Separate with a new line.")
+        .addTextArea((textArea) =>{
+            textArea.setValue(this.plugin.settings.wordsToExclude.link.join('\n'));
+            textArea.inputEl.onblur = async (e: FocusEvent ) => {
+                const inputedValue = (e.target as HTMLInputElement).value;
+                this.plugin.settings.wordsToExclude.link = inputedValue.split('\n');
+                await this.plugin.saveSettings();
+            }
+        });
+
+        new Setting(containerEl)
+        .setName("Tags to exclude")
+        .setDesc("tags which include listed words and elements which belong to them will not be displayed. Separate with a new line.")
+        .addTextArea((textArea) =>{
+            textArea.setValue(this.plugin.settings.wordsToExclude.tag.join('\n'));
+            textArea.inputEl.onblur = async (e: FocusEvent ) => {
+                const inputedValue = (e.target as HTMLInputElement).value;
+                this.plugin.settings.wordsToExclude.tag = inputedValue.split('\n');
+                await this.plugin.saveSettings();
+            }
+        });
+
+        new Setting(containerEl)
+        .setName("List items to exclude")
+        .setDesc("List items which include listed words and elements which belong to them will not be displayed. Separate with a new line.")
+        .addTextArea((textArea) =>{
+            textArea.setValue(this.plugin.settings.wordsToExclude.listItems.join('\n'));
+            textArea.inputEl.onblur = async (e: FocusEvent ) => {
+                const inputedValue = (e.target as HTMLInputElement).value;
+                this.plugin.settings.wordsToExclude.listItems = inputedValue.split('\n');
+                await this.plugin.saveSettings();
+            }
+        });
     }
 }

@@ -1,4 +1,4 @@
-import { Plugin, Pos, TFile } from 'obsidian';
+import { Plugin, Pos, TFile, WorkspaceLeaf } from 'obsidian';
 
 // Daily Note Interface
 import { getAllDailyNotes, getDailyNote, getDateFromFile } from "obsidian-daily-notes-interface";
@@ -25,14 +25,30 @@ export interface DailyNoteOutlineSettings {
 	allRootItems: boolean;
 	displayFileInfo: string; // none || lines || days
 
-	headingsToIgnore: string[];  // filter
-	linksToIgnore: string[];
-	tagsToIgnore: string[];
-	listItemsToIgnore: string[];
+	wordsToIgnore:{	//filter
+		heading: string[],
+		link: string[],
+		tag: string[],
+		listItems: string[]
+	};
 
 	inlinePreview: boolean;
 	tooltipPreview: boolean;
 	tooltipPreviewDirection: string; // left || right
+
+
+	includeOnly: string;	// none || heading, link, tag, listItems
+	wordsToInclude: string[];
+	includeBeginning: boolean;
+
+	primeElement: string; // none || heading, link, tag, listItems
+	wordsToExclude:{
+		heading: string[],
+		link: string[],
+		tag: string[],
+		listItems: string[]
+	}
+
 
 }
 
@@ -53,14 +69,29 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 	allRootItems: true,
 	displayFileInfo: 'lines',
 
-	headingsToIgnore: [],
-	linksToIgnore: [],
-	tagsToIgnore: [],
-	listItemsToIgnore: [],
+	wordsToIgnore:{
+		heading: [],
+		link: [],
+		tag: [],
+		listItems: []
+	},
 
 	inlinePreview: true,
 	tooltipPreview: true,
-	tooltipPreviewDirection: 'left'
+	tooltipPreviewDirection: 'left',
+
+	primeElement: 'none',
+	includeOnly: 'none',
+	wordsToInclude: [],
+	includeBeginning: true,
+
+	wordsToExclude:{
+		heading: [],
+		link: [],
+		tag: [],
+		listItems: []
+	}
+
 }
 
 export interface FileInfo {
@@ -143,7 +174,13 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 		// 		}
 		// 	}
 		// });
-		
+	
+	// viewの更新(アップデート時用)
+	if (this.app.workspace.layoutReady){
+		this.checkView();
+	} else {
+		this.registerEvent(this.app.workspace.on('layout-ready', this.checkView));
+	}
 
 	// This adds a settings tab so the user can configure various aspects of the plugin
 	this.addSettingTab(new DailyNoteOutlineSettingTab(this.app, this));
@@ -162,4 +199,36 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+	/*
+	async checkView(){
+		let leaf: WorkspaceLeaf = null;
+		console.log('this',this);
+
+		for (leaf of this.app.workspace.getLeavesOfType(DailyNoteOutlineViewType)){
+			console.log('leaf',leaf);
+			if(leaf.view instanceof DailyNoteOutlineView) return;
+			await leaf.setViewState({ type: 'empty'});
+			break;
+		}
+		(leaf ?? this.app.workspace.getRightLeaf(false)).setViewState({
+			type: DailyNoteOutlineViewType,
+			active: true,
+		});
+	} 
+	*/
+	
+	checkView = async():Promise<void> => {
+		let leaf: WorkspaceLeaf = null;
+
+		for (leaf of this.app.workspace.getLeavesOfType(DailyNoteOutlineViewType)){
+			if(leaf.view instanceof DailyNoteOutlineView) return;
+			await leaf.setViewState({ type: 'empty'});
+			break;
+		}
+		(leaf ?? this.app.workspace.getRightLeaf(false)).setViewState({
+			type: DailyNoteOutlineViewType,
+			active: true,
+		});
+	} 
+	 
 }

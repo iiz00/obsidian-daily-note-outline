@@ -299,7 +299,7 @@ export class DailyNoteOutlineView extends ItemView {
 									isTopLevel = false;
 							}
 						}
-							
+						// console.log('this,fileinfo[i],cach.listItems[j]',this,this.fileInfo[i],cache.listItems[j]); //////
 						const element:OutlineData = {
 						typeOfElement : "listItems",
 						position : cache.listItems[j].position,
@@ -486,6 +486,10 @@ export class DailyNoteOutlineView extends ItemView {
 			});
 		}
 
+		// include only modeか
+		let includeMode: boolean = (this.settings.includeOnly != 'none') && (Boolean(this.settings.wordsToInclude.length) || (this.settings.includeBeginning));
+		
+
 		for (let i=0; i<files.length ; i++){
 						
 			// デイリーノートのタイトル部分作成 = フォルダ作成
@@ -529,6 +533,15 @@ export class DailyNoteOutlineView extends ItemView {
 				false
 			);
 
+			// include mode 用の変数を宣言
+			let isIncluded = this.settings.includeBeginning;
+			let includeModeHeadingLevel: number;
+			// exclude mode 用変数
+			let isExcluded = false;
+			let excludeType: string;
+			let excludeModeHeadingLevel: number;
+			let primeType = this.settings.includeOnly == 'none' ? this.settings.primeElement : this.settings.includeOnly;
+
 			//アウトライン要素の描画。data[i]が要素0ならスキップ
 			//二重ループから抜けるためラベルelementloopをつけた
 			if (data[i].length > 0){
@@ -536,13 +549,71 @@ export class DailyNoteOutlineView extends ItemView {
 				// let previewText3:string ='';  // ツールチッププレビュー用  使わないかも。
 
 				elementloop: for (let j=0; j<data[i].length; j++){
+					
+					// 現アウトライン要素の種別を取得
+					const element = data[i][j].typeOfElement;
+
+
+					//// include mode
+					if (includeMode && this.settings.includeOnly == element){
+						if (isIncluded == true && element == 'heading' && data[i][j].level > includeModeHeadingLevel  ){
+							//下位見出しの場合は処理をスキップ
+						} else {
+							// 組み入れるワードにマッチするか判定
+							isIncluded = false;
+							for (const value of this.settings.wordsToInclude){
+								if ( (value) && data[i][j].displayText.includes(value)){
+									isIncluded = true;
+									if (element == 'heading'){
+										includeModeHeadingLevel = data[i][j].level;
+									}
+								}
+							}
+						}
+					}
+					if (!isIncluded){
+						continue;
+					}
+					
+					//// exclude mode
+					if (!isExcluded || (isExcluded && (excludeType == element || primeType == element))){
+						if (element == 'heading' && data[i][j].level > excludeModeHeadingLevel){
+						// 下位見出しの場合は処理をスキップ	
+						} else {
+							isExcluded = false;
+							//次回以降、全種別に対応できるように修正を。
+							for (const value of this.settings.wordsToExclude[element]){
+								if ( (value) && data[i][j].displayText.includes(value)){
+									isExcluded = true;
+									excludeType = element;
+									if (element == 'heading'){
+										excludeModeHeadingLevel = data[i][j].level;
+									}
+								}
+							}
+
+						}
+					}   
+					if (isExcluded){
+						continue;
+					}
+
 					//// フィルタリング filtering
 
 					//要素ごとの非表示判定  設定で非表示になっていればスキップ
-					const element = data[i][j].typeOfElement;
+					
 					if (this.settings.showElements[element] == false){
 						continue;
 					}
+
+					// simple filter 除外ワードにマッチすればスキップ
+
+					for (const value of this.settings.wordsToIgnore[element]){
+						if( (value) && data[i][j].displayText.includes(value)){
+							continue elementloop;
+						}
+					}
+
 					//// 要素種別ごとの処理
 					
 					// headings
@@ -551,31 +622,14 @@ export class DailyNoteOutlineView extends ItemView {
 						if ( !this.settings.headingLevel[data[i][j].level - 1]){
 							continue;
 						}
-						
-						// 除外ワードにマッチすればスキップ
-						for (const value of this.settings.headingsToIgnore){
-							if ( (value) && data[i][j].displayText.includes(value)){
-								continue elementloop;
-							}
-						}
 					}
 
 					// links
 					if (element == 'link'){
-						for (const value of this.settings.linksToIgnore){
-							if ( (value) && data[i][j].displayText.includes(value)){
-								continue elementloop;
-							}
-						}
 					}
 
 					// tags
 					if (element == 'tag'){
-						for (const value of this.settings.tagsToIgnore){
-							if ( (value) && data[i][j].displayText.includes(value)){
-								continue elementloop;
-							}
-						}
 					}
 
 
@@ -585,13 +639,6 @@ export class DailyNoteOutlineView extends ItemView {
 						if (!this.settings.allRootItems){
 							if (!(data[i][j].level == 0)){
 								continue;
-							}
-						}
-
-						// 除外ワードにマッチすればスキップ
-						for (const value of this.settings.listItemsToIgnore){
-							if ( (value) && data[i][j].displayText.includes(value)){
-								continue elementloop;
 							}
 						}
 					}
@@ -623,6 +670,7 @@ export class DailyNoteOutlineView extends ItemView {
 					//アウトライン要素のあとに文字列が続く場合その行をプレビュー、そうでなければ次の行をプレビュー
 					if (this.settings.inlinePreview) {
 						let previewText: string ='';
+							// console.log('data[i][j].position, info[i]',data[i][j].position, info[i]);
 						if (data[i][j].position.end.col < info[i].lines[ data[i][j].position.start.line ].length){
 							previewText = info[i].lines[ data[i][j].position.start.line ];
 						} else {
