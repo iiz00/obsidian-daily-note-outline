@@ -1,11 +1,14 @@
-import { MarkdownView, Notice, setIcon, debounce, Debouncer} from 'obsidian';
+import { MarkdownView, Notice, setIcon, debounce, Debouncer, Menu} from 'obsidian';
 
 import { ItemView, WorkspaceLeaf, TFile} from 'obsidian'
 
-import { getAllDailyNotes, getDateFromFile } from "obsidian-daily-notes-interface";
+import { getAllDailyNotes, getDateFromFile, createDailyNote } from "obsidian-daily-notes-interface";
 import moment from "moment"
 
 import DailyNoteOutlinePlugin, { DailyNoteOutlineSettings, OutlineData, FileInfo } from 'src/main';
+
+import { createAndOpenDailyNote } from 'src/createAndOpenDailyNote'
+import { ModalExtract } from 'src/modalExtract'
 
 
 export const DailyNoteOutlineViewType = 'daily-note-outline';
@@ -17,7 +20,7 @@ export class DailyNoteOutlineView extends ItemView {
 	private settings:DailyNoteOutlineSettings;
 
 	private allDailyNotes: Record<string,TFile>;
-	// private arrayAll: [string, TFile][]; 
+	
 	private targetFiles: TFile[];
 	private fileInfo: FileInfo[];
 	private searchRange: {
@@ -28,6 +31,9 @@ export class DailyNoteOutlineView extends ItemView {
 
 	private flagRedraw: boolean;
 	private flagRegetAll: boolean;
+
+	private extractMode: boolean = false;
+
   
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -134,8 +140,11 @@ export class DailyNoteOutlineView extends ItemView {
 
 	private async autoRefresh(){
 		if (!(this.flagRedraw || this.flagRegetAll)){
+
+			
 			return;
 		}
+
 		this.refreshView(this.flagRegetAll, this.flagRegetAll, true);
 		this.flagRegetAll = false;
 		this.flagRedraw = false;
@@ -147,6 +156,8 @@ export class DailyNoteOutlineView extends ItemView {
 	// getOutlineがtrue: 対象ファイル群のファイル情報、アウトライン情報を取得
 	// その後UI部分とアウトライン部分を描画
 	private async refreshView(regetAll: boolean, getTarget:boolean, getOutline:boolean){
+		
+
 		if (regetAll){
 			this.allDailyNotes = getAllDailyNotes();
 		}
@@ -163,8 +174,7 @@ export class DailyNoteOutlineView extends ItemView {
 
 
 	// 取得した全デイリーノートから探索範囲のデイリーノートを切り出す
-	
-	private getTargetFiles(allFiles:Record<string,TFile>): TFile[]{
+		private getTargetFiles(allFiles:Record<string,TFile>): TFile[]{
 		// 日数固定版 日付範囲のループによる探索
 		// review comment に基づく
 		let files: TFile[] = [];
@@ -176,51 +186,6 @@ export class DailyNoteOutlineView extends ItemView {
 			checkDate.subtract(1,'days');
 		}
 		return files;
-
-		// // 日数固定版
-		// let i = 0;
-		// let files: TFile[] = [];
-		// while ( i < arrayAll.length){
-		// 	const noteDate: moment = getDateFromFile(arrayAll[i][1], 'day');
-		// 	if (noteDate.isSameOrBefore(this.searchRange.latest,'day')){
-		// 		if (noteDate.isSameOrAfter(this.searchRange.earliest, 'day')){
-		// 			files.push(arrayAll[i][1]);
-		// 		} else {
-		// 			break;
-		// 		}
-		// 	}
-		// 	i++;
-		// }
-		// return files;
-
-
-		// 件数固定版
-		/*日数固定に移行したためコメントアウト
-		let i = 0;
-		let offset: number;
-		while ( i < arrayAll.length ){
-			// offsetの日付と現在の起点日を比較
-			// もし起点日がoffsetの日付と同じかより未来なら、offsetの値を決定する。
-			// もし起点日がoffsetより昔なら、offsetを+1する。
-			// もしoffsetのDNの日付が起点日より昔なら、offsetを決定する
-			if (getDateFromFile(arrayAll[i][1],'day').isSameOrBefore(this.startingDateTemp,'day')){
-				offset = i;
-				break;
-			}
-			i++;
-		}
-		if (offset == null){
-			console.log("offsetなし。最後の日にします");
-			offset = i;
-		}
-		// arrayAllから表示するデイリーノート配列を切り出す
-		const targetArray = arrayAll.slice(offset,
-			((offset + this.settings.numberOfDN)<(arrayAll.length - 1)) ? (offset + this.settings.numberOfDN):(arrayAll.length-1)
-			 );
-		const targetFiles: TFile[] = targetArray.map( e => e[1]);
-		this.endingDateTemp = getDateFromFile(targetFiles[targetFiles.length-1],"day");
-		return targetFiles;
-		*/
 	}
 
 	// デイリーノートの配列から各ファイルに関する情報を抽出
@@ -299,7 +264,7 @@ export class DailyNoteOutlineView extends ItemView {
 									isTopLevel = false;
 							}
 						}
-						// console.log('this,fileinfo[i],cach.listItems[j]',this,this.fileInfo[i],cache.listItems[j]); //////
+						
 						const element:OutlineData = {
 						typeOfElement : "listItems",
 						position : cache.listItems[j].position,
@@ -444,6 +409,66 @@ export class DailyNoteOutlineView extends ItemView {
 			}
 		);
 
+		// デイリーノート作成
+		navActionButton = navButtonContainer.createDiv("clickable-icon nav-action-button");
+		navActionButton.ariaLabel = "create/open today's daily note";
+		setIcon(navActionButton,"calendar-plus",20);
+		navActionButton.addEventListener(
+			"click",
+			async (event:MouseEvent) =>{
+				event.preventDefault;
+				const date = moment();
+				createAndOpenDailyNote(date, this.allDailyNotes);
+			}
+		);
+		navActionButton.addEventListener(
+			"contextmenu",
+			(event: MouseEvent) => {
+				const menu = new Menu();
+				menu.addItem((item) =>
+					item
+						.setTitle("create/open tomorrow's daily note")
+						.setIcon("calendar-plus")
+						.onClick(async ()=> {
+							const date = moment().add(1,'days');
+							createAndOpenDailyNote(date, this.allDailyNotes); 
+						})
+				);
+				menu.showAtMouseEvent(event);
+			}
+		);
+
+		// 抽出
+		navActionButton = navButtonContainer.createDiv("clickable-icon nav-action-button");
+		if (!this.extractMode){
+			//抽出をオンに
+			navActionButton.ariaLabel = "extract";
+			setIcon(navActionButton,"search",20);
+			navActionButton.addEventListener(
+			"click",
+			async (event:MouseEvent) =>{
+				//入力モーダルを開く
+				event.preventDefault;
+				const onSubmit = (enableExtract: boolean) => {
+					if (enableExtract){
+						this.extractMode = true;
+						this.refreshView(false,false,false);
+					}
+				}
+
+				new ModalExtract(this.app, this.plugin, onSubmit).open();
+			});
+		} else {
+			//抽出をオフに
+			navActionButton.ariaLabel = "unextract";
+			setIcon(navActionButton,"x-circle",20);
+			navActionButton.addEventListener(
+			"click",
+			async (event:MouseEvent) =>{
+				this.extractMode = false;
+				this.refreshView(false,false,false);
+			});
+		}
 			
 		// 日付の範囲
 		const navDateRange: HTMLElement = navHeader.createDiv("nav-date-range");
@@ -541,18 +566,17 @@ export class DailyNoteOutlineView extends ItemView {
 			let excludeType: string;
 			let excludeModeHeadingLevel: number;
 			let primeType = this.settings.includeOnly == 'none' ? this.settings.primeElement : this.settings.includeOnly;
+			// extract マッチする項目があったかどうか
+			let isExtracted = false;
 
 			//アウトライン要素の描画。data[i]が要素0ならスキップ
 			//二重ループから抜けるためラベルelementloopをつけた
 			if (data[i].length > 0){
 
-				// let previewText3:string ='';  // ツールチッププレビュー用  使わないかも。
-
 				elementloop: for (let j=0; j<data[i].length; j++){
-					
+
 					// 現アウトライン要素の種別を取得
 					const element = data[i][j].typeOfElement;
-
 
 					//// include mode
 					if (includeMode && this.settings.includeOnly == element){
@@ -581,7 +605,6 @@ export class DailyNoteOutlineView extends ItemView {
 						// 下位見出しの場合は処理をスキップ	
 						} else {
 							isExcluded = false;
-							//次回以降、全種別に対応できるように修正を。
 							for (const value of this.settings.wordsToExclude[element]){
 								if ( (value) && data[i][j].displayText.includes(value)){
 									isExcluded = true;
@@ -598,8 +621,6 @@ export class DailyNoteOutlineView extends ItemView {
 						continue;
 					}
 
-					//// フィルタリング filtering
-
 					//要素ごとの非表示判定  設定で非表示になっていればスキップ
 					
 					if (this.settings.showElements[element] == false){
@@ -611,6 +632,16 @@ export class DailyNoteOutlineView extends ItemView {
 					for (const value of this.settings.wordsToIgnore[element]){
 						if( (value) && data[i][j].displayText.includes(value)){
 							continue elementloop;
+						}
+					}
+
+					//// 抽出 extract
+
+					if (this.extractMode == true) {
+						if (!data[i][j].displayText.includes(this.settings.wordsToExtract)){
+							continue;
+						} else {
+							isExtracted = true;
 						}
 					}
 
@@ -670,7 +701,7 @@ export class DailyNoteOutlineView extends ItemView {
 					//アウトライン要素のあとに文字列が続く場合その行をプレビュー、そうでなければ次の行をプレビュー
 					if (this.settings.inlinePreview) {
 						let previewText: string ='';
-							// console.log('data[i][j].position, info[i]',data[i][j].position, info[i]);
+
 						if (data[i][j].position.end.col < info[i].lines[ data[i][j].position.start.line ].length){
 							previewText = info[i].lines[ data[i][j].position.start.line ];
 						} else {
@@ -746,32 +777,59 @@ export class DailyNoteOutlineView extends ItemView {
 						});
 					});
 
+					// contextmenu
+					outlineTitle.addEventListener(
+						"contextmenu",
+						(event: MouseEvent) => {
+							const menu = new Menu();
+							menu.addItem((item) =>
+								item
+									.setTitle("extract")
+									.setIcon("search")
+									.onClick(async ()=>{
+										this.plugin.settings.wordsToExtract = data[i][j].displayText;
+										await this.plugin.saveSettings();
+										this.extractMode = true;
+										this.refreshView(false,false,false);
+									})
+							);
+							menu.showAtMouseEvent(event);
+						}
+					);
+
 				}
 			} else {
 				//要素0だったときの処理
-				//各行をチェックし、空行でない初めの行を表示する
-				for (let j = 0; j < info[i].lines.length; j++){
-					if (info[i].lines[j] == ""){
-						continue;
-					} else {
-						const outlineEl: HTMLElement = dailyNoteChildrenEl
-								.createDiv("nav-file");
-						const outlineTitle: HTMLElement = outlineEl.createDiv("nav-file-title nav-action-button");
-						outlineTitle.createDiv("nav-file-title-content").setText(info[i].lines[j]);
-						outlineTitle.addEventListener(
-							"click",
-							async(event: MouseEvent) => {
-								event.preventDefault();
-								await this.app.workspace.getLeaf().openFile(files[i]);
-							},
-							false
-						);
-						break;
+				//各行をチェックし、空行でない初めの行を表示する(抽出モードでは行わない)
+				if (this.extractMode == false){
+					for (let j = 0; j < info[i].lines.length; j++){
+
+						if (info[i].lines[j] == ""){
+							continue;
+						} else {
+							const outlineEl: HTMLElement = dailyNoteChildrenEl
+									.createDiv("nav-file");
+							const outlineTitle: HTMLElement = outlineEl.createDiv("nav-file-title nav-action-button");
+							outlineTitle.createDiv("nav-file-title-content").setText(info[i].lines[j]);
+							outlineTitle.addEventListener(
+								"click",
+								async(event: MouseEvent) => {
+									event.preventDefault();
+									await this.app.workspace.getLeaf().openFile(files[i]);
+								},
+								false
+							);
+							break;
+						}
 					}
 				}
-				
-			}
+			
 
+			}
+			// 抽出モードで抽出した要素がない場合、ノート自体を非表示に。
+			if (this.extractMode == true && isExtracted == false){
+				dailyNoteEl.remove();
+			}
 		}
 		// アウトライン部分の描画実行
 		this.contentEl.appendChild(containerEl);

@@ -9,6 +9,7 @@ import { DailyNoteOutlineView, DailyNoteOutlineViewType } from 'src/view'
 import { DailyNoteOutlineSettingTab } from 'src/setting'
 
 
+
 // 設定項目
 export interface DailyNoteOutlineSettings {
 	initialSearchType: string; //forward or backward 特定日から前方探索or当日から後方探索
@@ -24,6 +25,7 @@ export interface DailyNoteOutlineSettings {
 	headingLevel: boolean[];
 	allRootItems: boolean;
 	displayFileInfo: string; // none || lines || days
+	viewPosition: string;	//right || left || tab || split || popout 
 
 	wordsToIgnore:{	//filter
 		heading: string[],
@@ -47,7 +49,8 @@ export interface DailyNoteOutlineSettings {
 		link: string[],
 		tag: string[],
 		listItems: string[]
-	}
+	};
+	wordsToExtract: string;
 
 
 }
@@ -68,6 +71,7 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 	headingLevel: [true, true, true, true, true, true],
 	allRootItems: true,
 	displayFileInfo: 'lines',
+	viewPosition: 'right',
 
 	wordsToIgnore:{
 		heading: [],
@@ -90,7 +94,8 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 		link: [],
 		tag: [],
 		listItems: []
-	}
+	},
+	wordsToExtract: '',
 
 }
 
@@ -132,12 +137,7 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 			name: 'Open Outline',
 
 			callback: async ()=> {
-				let [leaf] = this.app.workspace.getLeavesOfType(DailyNoteOutlineViewType);
-				if (!leaf) {
-					leaf = this.app.workspace.getRightLeaf(false);
-					await leaf.setViewState({ type: DailyNoteOutlineViewType});
-				}
-				this.app.workspace.revealLeaf(leaf);
+				this.checkView();
 			}
 		});
 		
@@ -199,36 +199,32 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
-	/*
-	async checkView(){
-		let leaf: WorkspaceLeaf = null;
-		console.log('this',this);
 
-		for (leaf of this.app.workspace.getLeavesOfType(DailyNoteOutlineViewType)){
-			console.log('leaf',leaf);
-			if(leaf.view instanceof DailyNoteOutlineView) return;
-			await leaf.setViewState({ type: 'empty'});
-			break;
-		}
-		(leaf ?? this.app.workspace.getRightLeaf(false)).setViewState({
-			type: DailyNoteOutlineViewType,
-			active: true,
-		});
-	} 
-	*/
-	
 	checkView = async():Promise<void> => {
-		let leaf: WorkspaceLeaf = null;
 
-		for (leaf of this.app.workspace.getLeavesOfType(DailyNoteOutlineViewType)){
-			if(leaf.view instanceof DailyNoteOutlineView) return;
-			await leaf.setViewState({ type: 'empty'});
-			break;
+		let [leaf] = this.app.workspace.getLeavesOfType(DailyNoteOutlineViewType);
+		if (!leaf) {
+			switch (this.settings.viewPosition) {
+				case 'right':
+					leaf = this.app.workspace.getRightLeaf(false);
+					break;
+				case 'left':
+					leaf = this.app.workspace.getLeftLeaf(false);
+					break;
+				case 'tab':
+					leaf = this.app.workspace.getLeaf('tab');
+					break;
+				case 'split':
+					leaf = this.app.workspace.getLeaf('split');
+					break;
+				case 'popout':
+					leaf = this.app.workspace.getLeaf('window');
+					break;
+			}
+			await leaf.setViewState({ type: DailyNoteOutlineViewType});
 		}
-		(leaf ?? this.app.workspace.getRightLeaf(false)).setViewState({
-			type: DailyNoteOutlineViewType,
-			active: true,
-		});
+		this.app.workspace.revealLeaf(leaf);
+
 	} 
 	 
 }

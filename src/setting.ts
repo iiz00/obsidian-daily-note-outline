@@ -211,6 +211,24 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                 })
         });
 
+        // viewを表示する位置 （右サイドバー、左サイドバー、メインペイン）
+        new Setting(containerEl)
+        .setName("Position of the plugin view")
+        .setDesc("Specify default position where this plugin's view appears")
+        .addDropdown((dropdown) => {
+            dropdown
+                .addOption("right", "right side pane")
+                .addOption("left","left side pane")
+                .addOption("tab","new tab in main pane")
+                .addOption("split","splitted pane")
+                .addOption("popout","popout window")
+                .setValue(this.plugin.settings.viewPosition)
+                .onChange(async (value) => {
+                  this.plugin.settings.viewPosition = value;
+                  this.display();
+                  await this.plugin.saveSettings();
+                })
+        });
         
         //表示する見出しレベル
         this.containerEl.createEl("h4", {
