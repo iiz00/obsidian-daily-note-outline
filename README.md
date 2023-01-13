@@ -10,13 +10,13 @@ This plugin creates a custom view that displays the outlines of multiple daily n
 
 
 ## Getting started
-Install the plugin from the community plugin list.
-Make sure Daily Note core plugin is enabled.
-In the command palette, choose "Daily Note Outline: Open Outline".
+Install the plugin from the community plugin list.<br>
+Make sure Daily Note core plugin is enabled.<br>
+In the command palette, choose "Daily Note Outline: Open Outline".<br>
 
-デイリーノートコアプラグインが有効になっていることを確かめて下さい。
-本プラグインをcommunityプラグインリストからインストールし、有効化して下さい。
-コマンドパレットから、「Daily Note Outline: Open Outline」を実行して下さい。
+デイリーノートコアプラグインが有効になっていることを確かめて下さい。<br>
+本プラグインをcommunityプラグインリストからインストールし、有効化して下さい。<br>
+コマンドパレットから、「Daily Note Outline: Open Outline」を実行して下さい。<br>
 
 ## How to use
 To change the date range to display, click on the left and right arrows.<br>
@@ -54,6 +54,18 @@ includeは、1種類のアウトライン要素のみに使えます。指定し
 includeとexcludeは同時に使用できます。（ただし、includeに指定した要素種別にexcludeキーワードを指定しても意味がありません。）<br>
 simple filterは他と併用できます。例えば、includeに指定したものと同じキーワードを指定すると、includeの対象になった要素自体は表示せず、それに属する要素のみを表示できます。
 
+## extract
+You can extract only outline elements that contain a specific words. There are two ways to do this.<br>
+1. Click on the magnifying glass button and type in the string you want to extract.<br>
+2. Right-click on the outline element and select 'extract' from the context menu. Only elements containing the same name will be extracted.<br>
+Items that have been hidden by filtering or other means will not be displayed.<br>
+To cancel the extraction, click the X button (the magnifying glass button will change to an X button).<br>
+
+特定の文字列を含むアウトライン要素のみを抽出できます。方法は2つあります。<br>
+1．虫眼鏡ボタンをクリックし、抽出したい文字列を入力して下さい。<br>
+2．アウトライン要素を右クリックし、コンテキストメニューからextractを選択して下さい。同じ名前を含むアウトライン要素のみが抽出されます。<br>
+もともとfilterなどにより非表示になっている項目は表示されません。<br>
+抽出を解除するときは、×ボタン(虫眼鏡ボタンが×ボタンに変化します)をクリックして下さい。<br>
 
 ## Settings
 ### Basics
@@ -97,6 +109,12 @@ days: number of days since the base date (today for backward search, the date sp
 ファイル名の右側に情報を表示します<br>
 lines: ファイルの行数<br>
 days: 基準日からの日数(backward searchでは今日、forward searchではforward searchで指定した日付)
+
+#### Position of the plugin view
+Specify where to display the plugin's view when redisplaying or updating.
+(You can specify other than the left and right sidebars, but the behavior may not be as sophisticated.)
+再表示やアップデートの際に、どこにviewを表示するかを指定します。
+左右のサイドバー以外も指定できますが、動作は洗練されていないかもしれません。
 
 ### Headings
 #### Heading level to display
@@ -149,11 +167,25 @@ I also searched and referred to a bunch of posts in plugin-dev channel on Discor
 - show number of lines of each note
 - show the first section if no outline element exists
 - UI button for change settings
-- filter / include /exclude
+- simple filter / include /exclude / extract
 - partially
 	- better preview
 
 ## Changelog
+- 0.5.0
+	- Important fix
+		- Fixed overload observed in mobile version under certain situation. Please let me know if the problem persists.
+	- New function
+		- Extract
+			- you can extract outline elements including specific words
+				1. click magnifying glass UI button and input words to extract
+				2. right click on an outline element and choose 'extract' in the context menu. Then only elements with same name will be displayed.
+				3. To finish extract, click unextract UI button
+	- Improvements
+		- added a UI button to create/open today's daily note
+			- right click on the button shows the context menu to create tomorrow's daily note
+		- you can choose default position where this plugin's view appears from the settings.
+
 - 0.4.0
 	- New functions
 		- Include / Exclude
