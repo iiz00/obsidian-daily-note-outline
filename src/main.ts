@@ -10,7 +10,7 @@ import { DailyNoteOutlineSettingTab } from 'src/setting'
 
 
 
-// 設定項目
+// 設定項目 
 export interface DailyNoteOutlineSettings {
 	initialSearchType: string; //forward or backward 特定日から前方探索or当日から後方探索
 	offset: number;		// 未来の日付も含む場合何日分含めるか number of future days to show 
@@ -24,6 +24,9 @@ export interface DailyNoteOutlineSettings {
 	};
 	headingLevel: boolean[];
 	allRootItems: boolean;
+	allTasks: boolean;
+	taskOnly: boolean;
+	hideCompletedTasks: boolean;
 	displayFileInfo: string; // none || lines || days
 	viewPosition: string;	//right || left || tab || split || popout 
 
@@ -52,6 +55,41 @@ export interface DailyNoteOutlineSettings {
 	};
 	wordsToExtract: string;
 
+	icon:{	//icon for each type of element
+		heading: string,
+		link: string,
+		tag: string,
+		listItems: string,
+		note: string,
+		task: string,
+		taskDone: string,
+	};
+
+	customIcon:{
+		heading: string,
+		link: string,
+		tag: string,
+		listItems: string,
+		note: string,
+		task: string,
+		taskDone: string,
+	};
+
+	indent:{
+		heading: boolean;
+		link: boolean;
+		listItems: boolean;
+	};
+	prefix:{
+		heading: string;
+		link: string;
+		tag: string;
+		listItems: string;
+		task: string;
+		taskDone: string;
+	};
+	repeatHeadingPrefix: string; // none, level, level-1
+	addCheckboxText: boolean;
 
 }
 
@@ -68,8 +106,11 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 		listItems: true
 	},
 	
-	headingLevel: [true, true, true, true, true, true],
-	allRootItems: true,
+	headingLevel: [true, true, true, false, false, false],
+	allRootItems: false,
+	allTasks: true,
+	taskOnly: false,
+	hideCompletedTasks: false,
 	displayFileInfo: 'lines',
 	viewPosition: 'right',
 
@@ -84,11 +125,12 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 	tooltipPreview: true,
 	tooltipPreviewDirection: 'left',
 
-	primeElement: 'none',
+	
 	includeOnly: 'none',
 	wordsToInclude: [],
 	includeBeginning: true,
 
+	primeElement: 'none',
 	wordsToExclude:{
 		heading: [],
 		link: [],
@@ -96,6 +138,42 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 		listItems: []
 	},
 	wordsToExtract: '',
+
+	icon:{	
+		heading: 'none',
+		link: 'link',
+		tag: 'tag',
+		listItems: 'list',
+		note: 'file',
+		task: 'square',
+		taskDone: 'check-square'
+	},
+	customIcon:{
+		heading: 'hash',
+		link: 'link',
+		tag: 'tag',
+		listItems: 'list',
+		note:'file',
+		task:'square',
+		taskDone:'check-square'
+	},
+
+	indent:{
+		heading: true,
+		link: true,
+		listItems: true,
+	},
+	prefix:{
+		heading: '',
+		link: '',
+		tag: '',
+		listItems: '',
+		task: '',
+		taskDone: ''
+	},
+	repeatHeadingPrefix:'none',
+	addCheckboxText: false,
+	
 
 }
 
@@ -113,7 +191,9 @@ export interface OutlineData {
 	position:Pos;
 	link?:string;
 	displayText?: string;
+	// level ：listItemsについては0：トップ、1：ルート、2：それ以下
 	level?:number;
+	task?: string|undefined;
 }
 
 export default class DailyNoteOutlinePlugin extends Plugin {
@@ -123,7 +203,6 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 	async onload() {
 		
 		await this.loadSettings();
-
 		//register custome view according to Devloper Docs
 		this.registerView(
 			DailyNoteOutlineViewType,
