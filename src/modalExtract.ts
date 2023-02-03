@@ -16,13 +16,15 @@ export class ModalExtract extends Modal {
 	}
 
 	onOpen() {
+		this.inputedValue = this.plugin.settings.wordsToExtract;
+
 		const { contentEl } = this;
 		contentEl.createEl("br");
 
 		new Setting(contentEl)
 			.setName("Extract by word or phrase:")
 			.addText((text) =>{
-				text.setValue(this.plugin.settings.wordsToExtract);
+				text.setValue(this.plugin.settings.wordsToExtract).inputEl.select();
 				text.onChange((value) => {
 					this.inputedValue = value
 				});
@@ -35,10 +37,7 @@ export class ModalExtract extends Modal {
 					.setCta()
 					.onClick(
 						async () => {
-						this.close();
-						this.plugin.settings.wordsToExtract = this.inputedValue;
-						await this.plugin.saveSettings();
-						this.onSubmit(true);
+						this.executeExtract();
 						}
 					))
 			.addButton((btn) =>
@@ -47,15 +46,23 @@ export class ModalExtract extends Modal {
 					.onClick(() => {
 						this.close();
 					}));
-		// Enterでの入力に後で対応したい
-		// this.scope.register([], 'Enter', 
-		// 	(evt: KeyboardEvent)=>{
-		// 	}
-		// 	);
+		// Enterでの入力に後で対応したい 
+		this.scope.register([], 'Enter', 
+			(evt: KeyboardEvent)=>{
+				this.executeExtract();
+			}
+		 	);
 	}
 
 	onClose() {
 		let { contentEl } = this;
 		contentEl.empty();
+	}
+
+	async executeExtract():Promise<void>{
+		this.close();
+		this.plugin.settings.wordsToExtract = this.inputedValue;
+		await this.plugin.saveSettings();
+		this.onSubmit(true);
 	}
 }

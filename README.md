@@ -12,11 +12,11 @@ This plugin creates a custom view that displays the outlines of multiple daily n
 ## Getting started
 Install the plugin from the community plugin list.<br>
 Make sure Daily Note core plugin is enabled.<br>
-In the command palette, choose "Daily Note Outline: Open Outline".<br>
+To display the outline, choose "Daily Note Outline: Open Outline" in the command pallete.<br>
 
 デイリーノートコアプラグインが有効になっていることを確かめて下さい。<br>
 本プラグインをcommunityプラグインリストからインストールし、有効化して下さい。<br>
-コマンドパレットから、「Daily Note Outline: Open Outline」を実行して下さい。<br>
+アウトラインが表示されていない場合は、コマンドパレットから、「Daily Note Outline: Open Outline」を実行して下さい。<br>
 
 ## How to use
 To change the date range to display, click on the left and right arrows.<br>
@@ -33,17 +33,17 @@ I recommend that you first set the display/hide settings for each outline elemen
 各要素の上でCtrlキーを押すとホバープレビューを表示します。<br>
 使用にあたり、まず設定画面で各アウトライン要素（見出し、リンク、タグ、リスト項目）ごとに表示/非表示を設定することをお勧めします。
 
-## simple filter / include / exclude
-(I'm not good at English, so many of terms and explanations here might be difficult to understand. I would appreciate your feedback if the terminology or explanations are not correct!)
+## Feature
+### Simple filter / Include / Exclude
 
-In order to hide unnecessary items and display only the necessary ones, three types of filter functions are implemented: Simple filter, Include, and Exclude.
+In order to hide unnecessary items and display only the necessary ones, three types of filter functions are implemented: **Simple filter**, **Include**, and **Exclude**.
 
-Simple filter simply hides items that match a specified word or phrase. The hierarchy of items is not taken into account.<br>
-Include can be applied to only one type of outline element. It treats the range from the outline element of the specified type to the next similar element as a block, and only items matching the specified word or phrase and belonging to that block are displayed.<br>
-Conversely, Exclude hides matching items and their blocks. If you specify an element type in the "excluding ends at" section of the settings, or if Include is enabled, the block is considered to have ended at that element, and only that part of the block is hidden.
+**Simple filter** simply hides items that match a specified word or phrase. The hierarchy of items is not taken into account.<br>
+**Include** can be applied to only one type of outline element. It treats the range from the outline element of the specified type to the next similar element as a block, and only items matching the specified word or phrase and belonging to that block are displayed.<br>
+Conversely, **Exclude** hides matching items and their blocks. If you specify an element type in the "excluding ends at" section of the settings, or if Include is enabled, the block is considered to have ended at that element, and only that part of the block is hidden.
 
-Include and Exclude can be used at the same time. (However, it does not make sense to specify the exclude keyword for an element type that is specified in Include.)
-Simple filter can be used in conjunction with other filters. For example, if you specify the same keywords as those specified for Include, you can display only the elements that belong to the elements matched the include keywords, not the elements themselves.
+**Include** and **Exclude** can be used at the same time. (However, it does not make sense to specify the exclude keyword for an element type that is specified in Include.)
+**Simple filter** can be used in conjunction with other filters. For example, if you specify the same keywords as those specified for Include, you can display only the elements that belong to the elements matched the include keywords, not the elements themselves.
 
 不必要な項目を非表示にし、必要な項目のみ表示するために、simple filter, include, exclude の3つのフィルター機能を実装しています。<br>
 simple filterは、指定した単語やフレーズにマッチする項目を、単純に非表示にします。項目ごとの階層は考慮されません。<br>
@@ -54,30 +54,33 @@ includeは、1種類のアウトライン要素のみに使えます。指定し
 includeとexcludeは同時に使用できます。（ただし、includeに指定した要素種別にexcludeキーワードを指定しても意味がありません。）<br>
 simple filterは他と併用できます。例えば、includeに指定したものと同じキーワードを指定すると、includeの対象になった要素自体は表示せず、それに属する要素のみを表示できます。
 
-## extract
-You can extract only outline elements that contain a specific words. There are two ways to do this.<br>
+### Extract
+You can extract only outline elements that contain a specific words. There are three ways to do this.<br>
+
 1. Click on the magnifying glass button and type in the string you want to extract.<br>
 2. Right-click on the outline element and select 'extract' from the context menu. Only elements containing the same name will be extracted.<br>
+3. Right-click on the magnifying glass button and choose 'extract tasks'. Only list items that have checkbox will be extracted.<br>
 Items that have been hidden by filtering or other means will not be displayed.<br>
 To cancel the extraction, click the X button (the magnifying glass button will change to an X button).<br>
 
-特定の文字列を含むアウトライン要素のみを抽出できます。方法は2つあります。<br>
+特定の文字列を含むアウトライン要素のみを抽出できます。方法は3つあります。<br>
 1．虫眼鏡ボタンをクリックし、抽出したい文字列を入力して下さい。<br>
 2．アウトライン要素を右クリックし、コンテキストメニューからextractを選択して下さい。同じ名前を含むアウトライン要素のみが抽出されます。<br>
+3．虫眼鏡ボタンをクリックし、extract tasksを選択して下さい。タスク(チェックボックスを含むリストアイテム)のみが抽出されます。<br>
+
 もともとfilterなどにより非表示になっている項目は表示されません。<br>
 抽出を解除するときは、×ボタン(虫眼鏡ボタンが×ボタンに変化します)をクリックして下さい。<br>
 
 ## Settings
+Some child items are not initially displayed and will appear when the parent item is turned on.
+
+一部の子項目は初期状態では表示されず、親項目がオンになったときに表示されます。
 ### Basics
 #### Initial search type
 - backward(default)
 	- Displays the past daily notes for the specified number of days starting from today.<br>  今日を起点として指定した日数分の過去のデイリーノートを表示します。通常こちらで良いと思います。
 - forward
 	- Displays daily notes for the specified number of days starting from the date specified in Onset date.<br> Onset dateで指定した日付を起点として、指定日数分のデイリーノートを表示します。
-#### Search duration
-Specify the number of days to be explored per page. It is recommended to set a shorter period for those who use Daily notes every day and a longer period for those who use it only occasionally. I would recommend about 7-56 days.
-
-1ページあたりに探索するデイリーノートの期間を日で指定します。デイリーノートを頻繁に使用する人は短く、たまにしか使わない人は長く設定するといいと思います。7日~56日くらいでしょうか。
 
 #### Include future daily notes
 When backward search is used, daily notes of the specified number of days in the future are also displayed (If you set it long enough, you can also use this plugin as a list of upcoming events!).
@@ -91,7 +94,12 @@ Clicking on the date range under UI buttons jumps to the date.
 サーチタイプがforward search のとき起動時に探索開始する日付をYYYY-MM-DDの形式で指定します。<br>
 また、UIボタンの下の日付範囲の表示をクリックしてもこの日にジャンプします。
 
-#### Show headings / links / tags / list items 
+#### Search duration
+Specify the number of days to be explored per page. It is recommended to set a shorter period for those who use Daily notes every day and a longer period for those who use it only occasionally. I would recommend about 7-56 days.
+
+1ページあたりに探索するデイリーノートの期間を日で指定します。デイリーノートを頻繁に使用する人は短く、たまにしか使わない人は長く設定するといいと思います。7日~56日くらいでしょうか。
+
+#### Show headings / links / tags / list items & tasks 
 Choose whether each element should be displayed in outline.
 
 それぞれの要素をアウトラインとして表示するか指定します。
@@ -100,6 +108,11 @@ Choose whether each element should be displayed in outline.
 With respect to list item, if this setting is off, it shows only the first item in a continuous list. When turned on, it displays all list items at root level.
 
 リスト項目に関して、この設定がオフになっていると連続したリストの初めの項目だけを表示します。オンになっていると、ルートレベルの項目（＝インデントされていない項目）を全て表示します。
+
+#### Show all tasks / Tasks only / Hide completed tasks
+Display setting for tasks (list items including checkboxes).
+Show all tasks will show all levels of tasks, regardless of the list settings above; Task only will hide all list items except for tasks; Hide completed tasks will hide completed tasks.
+タスク(チェックボックスを含むリストアイテム)についての表示設定です。Show all tasksをオンにすると、上のリスト設定にかかわらず、全ての階層のタスクを表示します。Task onlyをオンにするとタスク以外のリストが非表示になります。Hide completed tasksは完了済みタスクを非表示にします。
 
 #### Display file information
 Display file information to the right of each daily note file name.<br>
@@ -139,11 +152,69 @@ Specify the direction to display the tooltip preview.<br>
 
 ツールチッププレビューを表示する方向を指定します(自動で振り分けたかったけどやり方が分かりませんでした…)
 
-#### Filter
+### Simple filter
+#### Headings/Links/Tags/List items to ignore
 If each outline element contains a specified word or phrase, that outline element will not be displayed.<br>
 Specify one per line.
 
 指定した単語やフレーズが含まれるアウトライン要素は非表示になります。それぞれ改行で区切って下さい。
+
+### Include
+#### Element type for include
+Specifies the type of outline element to apply the Include filter to.
+
+指定したアウトライン要素の種別がIncludeフィルターの対象になります。
+
+#### Words to include
+Only outline elements containing the specified word or phrase and the block following it will be displayed.
+Each should be separated by a new line.
+
+指定した単語やフレーズが含まれるアウトライン要素と、それに続くブロックのみが表示対象となります。
+それぞれ改行で区切って下さい。
+
+#### Include the beginning part
+Specifies whether the beginning part of a note that precedes the appearance of the outline element specified in Element type for include is to be displayed.
+
+ノートの冒頭で、Element type for includeで指定したタイプのアウトライン要素が登場するより前の部分を表示対象とするかどうか指定します。
+
+### Exclude
+#### Exclusion end at
+If any of the outline element types is specified in this field, the area excluded by Exclude filter is terminated at the specified element.
+If any type is specified in Include filter, Exclude is terminated at that type and this field is ignored.
+
+この項目でいずれかのアウトライン要素タイプを指定した場合、Excludeフィルターによって除外される領域が指定した要素のところで打ち切られます。
+Includeフィルターでいずれかのタイプが指定されていた場合、そのタイプのところでExcludeは打ち切られ、この項目は無視されます。
+
+#### Headings/ Links/ Tags/ List items to exclude
+The outline element containing the specified word or phrase and the area following it will be hidden.
+Each should be separated by a new line.
+
+指定した単語やフレーズが含まれるアウトライン要素と、それに続く領域(同種のアウトライン要素、またはExclusion end atで指定した要素が出現する前までの領域)は非表示になります。
+それぞれ改行で区切って下さい。
+
+### Appearance
+Sets the appearance of each outline element when it is displayed.
+An icon and prefix string can be added to each element.
+If you choose 'custom' for icon, enter icon name of the Lucide icon (https://lucide.dev/ ) in 'Custom icon' field. Some icons do not seem to be able to be displayed.
+
+それぞれのアウトライン要素を表示する際の見た目を設定します。
+各要素にはアイコンおよびprefix文字列を付加することができます。
+アイコンでcustomを選んだ場合、Lucide (https://lucide.dev/ )のアイコン名を入力して下さい。一部のアイコンは表示できないようです。
+
+#### Headings: Repeat heading prefix
+If you enter a prefix for headings, turning this item on will repeat the prefix for the number of levels of headings.
+
+headingsのprefixを入力した場合、この項目をオンにすると、見出しのレベルの数だけprefixが繰り返されます。
+
+#### Headings: Add indent
+Indentation is added according to the level of the heading.
+
+見出しのレベルに応じてインデントを付加します。
+
+#### Tasks: Add checkbox text to prefix
+Append a string indicating the status of the checkbox to the end of the task prefix.
+
+タスクのprefixの最後にcheckboxの状態を示す文字列を付加します。
 
 ## Acknowledgement
 In developing this plugin, I have use many great plugins in Obsidian community as references. In particular, <br>
@@ -158,7 +229,7 @@ I also searched and referred to a bunch of posts in plugin-dev channel on Discor
 
 ## (want) to do
 - collapse a note
-- better appearance
+- support for periodic notes
 - note refactoring
 - show linked mentions / created / modefied files on each day (feasible in terms of performance?)
 - derivative plugin for other than daily notes
@@ -172,6 +243,18 @@ I also searched and referred to a bunch of posts in plugin-dev channel on Discor
 	- better preview
 
 ## Changelog
+- 0.6.0
+	- New functions
+		- Now task(checkbox) is treated separately from list items
+			- you can extract only tasks by right clicking Extract icon
+		- Change the appearance of each element (Setting)
+	- Improvements
+		- From the context menu, you can open the outline element in a new tab, splitted pane, or popout window
+		- In the settings, the dependent items are now hidden when the primary item is off.
+		- Extraction modal accepts Enter key
+	- Fixed
+		- Fiexed the extraction function failing in some situations
+
 - 0.5.0
 	- Important fix
 		- Fixed overload observed in mobile version under certain situation. Please let me know if the problem persists.
@@ -213,5 +296,4 @@ I also searched and referred to a bunch of posts in plugin-dev channel on Discor
 		- hover preview now shows proper location of each element
 - 0.1.1
 	- Initial release.
-
 

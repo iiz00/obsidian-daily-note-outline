@@ -33,6 +33,7 @@ export class DailyNoteOutlineView extends ItemView {
 	private flagRegetAll: boolean;
 
 	private extractMode: boolean = false;
+	private extractTask: boolean = false;
 
   
 	constructor(
@@ -212,7 +213,6 @@ export class DailyNoteOutlineView extends ItemView {
 			const cache = this.app.metadataCache.getFileCache(files[i]);
 			// 空配列を指定
 			data[i]=[];
-
 			// headings,links,tagsを抽出
 
 			// console.log('check headings',cache.hasOwnProperty("headings") );
@@ -221,7 +221,7 @@ export class DailyNoteOutlineView extends ItemView {
 					const element:OutlineData = {
 						typeOfElement : "heading",
 						position : cache.headings[j].position,
-						displayText : cache.headings[j].heading.padStart(cache.headings[j].heading.length + cache.headings[j].level - 1,'.'),
+						displayText : cache.headings[j].heading,
 						level: cache.headings[j].level
 					};
 					data[i].push(element);
@@ -249,31 +249,30 @@ export class DailyNoteOutlineView extends ItemView {
 			if (cache.hasOwnProperty("listItems")){
 
 				for (let j=0; j< cache.listItems.length ; j++){
-					// parent が負の数であればルートレベルアイテム。
-					if (cache.listItems[j].parent < 0){
-						// リストアイテムがリストのトップアイテムか、ルートレベルアイテムだがトップではないかの判定
-						// parentとposition.start.lineと絶対値が一致していればリストの最初のアイテム。
-						// 不一致だとルートレベル。
-						// ただし視覚的に離れたトップレベルのアイテムでも、間にheadingがないとルートアイテムとして判定されてしまうので、
-						// 前のリストアイテムとの行の差が1の時のみルートアイテムとして判定するよう修正する。
-						// element.level :  トップレベル＝0 , ルートレベル＝1
-						let isTopLevel = true;
-						if (j>0){
-							if (!(Math.abs(cache.listItems[j].parent) == cache.listItems[j].position.start.line) &&
-								(cache.listItems[j].position.start.line - cache.listItems[j-1].position.start.line == 1)){
-									isTopLevel = false;
-							}
+					//以下でリストアイテムの階層の判定を行う。
+					//リストの先頭の項目:0、先頭ではないがルートレベル:1、第2階層以下：2としている。
+					//parentが正の数なら第2階層以下
+					//負の数で、絶対値がposition.start.lineと一致していればトップアイテム(0)、非一致ならルート（1）
+					//ただし視覚的に離れたトップレベルのアイテムでも、間にheadingがないとルートアイテムとして判定されてしまうので、
+					//前のリストアイテムとの行の差が1の時のみルートアイテムとして判定するよう修正する。
+					let listLevel: number = 0; // 0:top item of a list 1:root leve 2:other
+					if (cache.listItems[j].parent >0){
+						listLevel = 2;
+					} else if (j>0){
+						if (!(Math.abs(cache.listItems[j].parent) == cache.listItems[j].position.start.line) &&
+							(cache.listItems[j].position.start.line - cache.listItems[j-1].position.start.line == 1)){
+									listLevel = 1;
 						}
-						
-						const element:OutlineData = {
+					}
+					const element:OutlineData = {
 						typeOfElement : "listItems",
 						position : cache.listItems[j].position,
 						displayText : this.fileInfo[i].lines[cache.listItems[j].position.start.line].replace(/^(\s|\t)*-\s(\[.+\]\s)*/,''),
-						level : (isTopLevel) ? 0 : 1
-						};
-						data[i].push(element);
-					}
-				}								
+						level : listLevel,
+						task : cache.listItems[j].task
+					};
+					data[i].push(element);
+				}
 			}
 			
 			// console.log('check tags',cache.hasOwnProperty("tags") );
@@ -466,9 +465,28 @@ export class DailyNoteOutlineView extends ItemView {
 			"click",
 			async (event:MouseEvent) =>{
 				this.extractMode = false;
+				this.extractTask = false;
 				this.refreshView(false,false,false);
+
 			});
 		}
+		navActionButton.addEventListener(
+			"contextmenu",
+			(event: MouseEvent) => {
+				const menu = new Menu();
+				menu.addItem((item) =>
+					item
+						.setTitle("extract tasks")
+						.setIcon("check-square")
+						.onClick(async ()=> {
+							this.extractMode = true;
+							this.extractTask = true;
+							this.refreshView(false,false,false); 
+						})
+				);
+				menu.showAtMouseEvent(event);
+			}
+		);
 			
 		// 日付の範囲
 		const navDateRange: HTMLElement = navHeader.createDiv("nav-date-range");
@@ -513,10 +531,13 @@ export class DailyNoteOutlineView extends ItemView {
 
 		// include only modeか
 		let includeMode: boolean = (this.settings.includeOnly != 'none') && (Boolean(this.settings.wordsToInclude.length) || (this.settings.includeBeginning));
+
+		// 表示オンになっている見出しレベルの最高値
+		let maxLevel = this.settings.headingLevel.indexOf(true);
 		
 
 		for (let i=0; i<files.length ; i++){
-						
+
 			// デイリーノートのタイトル部分作成 = フォルダ作成
 			const dailyNoteEl: HTMLDivElement = rootChildrenEl.createDiv("nav-folder");
 			const dailyNoteTitleEl: HTMLDivElement = dailyNoteEl.createDiv("nav-folder-title");
@@ -530,8 +551,21 @@ export class DailyNoteOutlineView extends ItemView {
 			}
 			*/
 			
-			dailyNoteTitleEl.createDiv("nav-folder-title-content").setText(files[i].basename);
 			
+			switch(this.settings.icon.note){
+				case 'none':
+					break;
+				case 'custom':
+					setIcon(dailyNoteTitleEl, this.settings.customIcon.note);
+					break;
+				default:
+					if (this.settings.icon.note){
+						setIcon(dailyNoteTitleEl, this.settings.icon.note);
+					}
+					break;
+			}
+			dailyNoteTitleEl.createDiv("nav-folder-title-content").setText(files[i].basename);
+
 			//ファイル名の後の情報を表示
 
 			switch (this.settings.displayFileInfo) {
@@ -557,6 +591,42 @@ export class DailyNoteOutlineView extends ItemView {
 				},
 				false
 			);
+			// コンテキストメニュー
+			dailyNoteTitleEl.addEventListener(
+				"contextmenu",
+				(event: MouseEvent) => {
+					const menu = new Menu();
+
+					//新規タブに開く
+					menu.addItem((item)=>
+						item
+							.setTitle("Open in new tab")
+							.setIcon("file-plus")
+							.onClick(()=> {
+								event.preventDefault();
+								this.app.workspace.getLeaf('tab').openFile(files[i]);
+							})
+					);
+					//右に開く
+					menu.addItem((item)=>
+						item
+							.setTitle("Open to the right")
+							.setIcon("separator-vertical")
+							.onClick(()=> {
+								event.preventDefault();
+								this.app.workspace.getLeaf('split').openFile(files[i]);
+							})
+					);
+
+					this.app.workspace.trigger(
+						"file-menu",
+						menu,
+						files[i],
+						'link-context-menu'
+					);
+					menu.showAtMouseEvent(event);
+				}
+			)
 
 			// include mode 用の変数を宣言
 			let isIncluded = this.settings.includeBeginning;
@@ -638,7 +708,9 @@ export class DailyNoteOutlineView extends ItemView {
 					//// 抽出 extract
 
 					if (this.extractMode == true) {
-						if (!data[i][j].displayText.includes(this.settings.wordsToExtract)){
+						if (this.extractTask == false && !data[i][j].displayText.includes(this.settings.wordsToExtract)){
+							continue;
+						} else if (this.extractTask == true && data[i][j].task === void 0){
 							continue;
 						} else {
 							isExtracted = true;
@@ -665,10 +737,17 @@ export class DailyNoteOutlineView extends ItemView {
 
 
 					// listItems
+
 					if (element == 'listItems'){
-						// トップ以外のリストアイテムが非表示の場合、該当すればスキップ
-						if (!this.settings.allRootItems){
-							if (!(data[i][j].level == 0)){
+						// 完了タスク非表示設定であれば完了タスクはスキップ
+						if (this.settings.hideCompletedTasks == true && data[i][j].task =='x'){
+							continue;
+						// 非タスク非表示設定であれば非タスクはスキップ
+						} else if (this.settings.taskOnly == true && data[i][j].task === void 0){
+							continue;
+						// 非タスクの通常リストアイテム、または タスクは全表示の設定で無ければレベルに応じてスキップ
+						} else if (this.settings.allTasks == false || data[i][j].task === void 0){
+							if ( (data[i][j].level == 2) || (data[i][j].level ==1 && this.settings.allRootItems == false)){
 								continue;
 							}
 						}
@@ -679,31 +758,68 @@ export class DailyNoteOutlineView extends ItemView {
 							.createDiv("nav-file");
 					//中身を設定
 					const outlineTitle: HTMLElement = outlineEl.createDiv("nav-file-title nav-action-button");
+
 					//アイコン icon
-					switch (element){
-						case 'link':
-							setIcon(outlineTitle,"link");
+
+					switch(this.settings.icon[element]){
+						case 'none':
 							break;
-						case 'tag':
-							setIcon(outlineTitle,"tag");
+						case 'headingwithnumber':
+							setIcon(outlineTitle, `heading-${data[i][j].level}`);
 							break;
-						case 'listItems':
-							setIcon(outlineTitle,"list");
+						case 'custom':
+							setIcon(outlineTitle, this.settings.customIcon[element]);
 							break;
 						default:
+							setIcon(outlineTitle, this.settings.icon[element]);
 							break;
 					}
+					// タスクだった場合アイコン上書き
+					if (element =='listItems' && data[i][j].task !== void 0){
+						if (data[i][j].task == 'x'){
+							setIcon(outlineTitle, this.settings.icon.taskDone == 'custom' ? 
+								this.settings.customIcon.taskDone : this.settings.icon.taskDone);
+						} else {
+							setIcon(outlineTitle, this.settings.icon.task =='custom' ?
+								this.settings.customIcon.task : this.settings.icon.task);
+						}
+					}
+					
+					//prefix、インデント
+					let prefix = this.settings.prefix[element];
+					if ( element == 'heading'){
+						switch (this.settings.repeatHeadingPrefix){
+							case 'level':
+								prefix = prefix.repeat(data[i][j].level);
+								break;
+							case 'levelminus1':
+								prefix = prefix.repeat(data[i][j].level - 1 );
+								break;
+						}
+					}
 
-					//要素ごとのテキスト
-					outlineTitle.createDiv("nav-file-title-content").setText(data[i][j].displayText);
+					if (element =='heading' && this.settings.indent.heading == true){
+						outlineTitle.style.paddingLeft = `${(data[i][j].level - maxLevel - 1)*1.5 + 0.5}em`;
+					}
+
+
+					if (element =='listItems' && data[i][j].task !== void 0) {
+							prefix = data[i][j].task == 'x' ? 
+								this.settings.prefix.taskDone : this.settings.prefix.task;
+							if (this.settings.addCheckboxText){
+								prefix = prefix + '['+data[i][j].task+'] ';
+							}
+					}
+					
+					outlineTitle.createDiv("nav-file-title-content").setText(prefix + data[i][j].displayText);
 
 					// インラインプレビュー
-					//アウトライン要素のあとに文字列が続く場合その行をプレビュー、そうでなければ次の行をプレビュー
+					// リンクとタグは、アウトライン要素のあとに文字列が続く場合その行をプレビュー、そうでなければ次の行をプレビュー
 					if (this.settings.inlinePreview) {
 						let previewText: string ='';
-
-						if (data[i][j].position.end.col < info[i].lines[ data[i][j].position.start.line ].length){
-							previewText = info[i].lines[ data[i][j].position.start.line ];
+						
+						if ((element == 'link' || element == 'tag') && data[i][j].position.end.col < info[i].lines[ data[i][j].position.start.line ].length){
+							previewText = info[i].lines[ data[i][j].position.start.line ].slice(data[i][j].position.end.col);
 						} else {
 							previewText = ( data[i][j].position.start.line < info[i].numOfLines -1 )?
 								info[i].lines[ data[i][j].position.start.line + 1] : ""; 
@@ -717,11 +833,31 @@ export class DailyNoteOutlineView extends ItemView {
 						// まず次の表示要素の引数を特定
 						let endLine:Number = info[i].numOfLines - 1;  //初期値は文章末
 						let k = j +1; // 現在のアウトライン引数+1からループ開始
-						while (k< data[i].length) {
+						endpreviewloop: while (k< data[i].length) {
 							//表示するエレメントタイプであれば行を取得してループを打ち切る
 							if (this.settings.showElements[data[i][k].typeOfElement]){
-								//ただし非トップのルートレベルリストアイテムの場合、非表示になっているので打ち切らない
-								if (!(data[i][k].typeOfElement == 'listItems' && this.settings.allRootItems == false && data[i][k].level ==1)){
+								//ただし各種の実際には非表示となる条件を満たしていたら打ち切らない
+								// リストの設定による非表示
+								if (data[i][k].typeOfElement == 'listItems' && 
+										( data[i][k].level >=2 ||
+										((this.settings.allRootItems == false && data[i][k].level == 1) && (this.settings.allTasks == false || data[i][k].task === void 0)) ||
+										(this.settings.taskOnly && data[i][k].task === void 0) ||
+										(this.settings.hideCompletedTasks && data[i][k].task == 'x'))){
+									k++;
+									continue;
+								// 見出しのレベルによる非表示
+								} else if (data[i][k].typeOfElement == 'heading' &&
+									this.settings.headingLevel[data[i][k].level - 1] == false){
+									k++;
+									continue;
+								// simple filterによる非表示
+								} else {
+									for (const value of this.settings.wordsToIgnore[data[i][k].typeOfElement]){
+										if( (value) && data[i][k].displayText.includes(value)){
+											k++;
+											continue endpreviewloop;
+										} 
+									}
 									endLine = data[i][k].position.start.line -1;
 									break;
 								}
@@ -782,17 +918,52 @@ export class DailyNoteOutlineView extends ItemView {
 						"contextmenu",
 						(event: MouseEvent) => {
 							const menu = new Menu();
+							//抽出
 							menu.addItem((item) =>
 								item
-									.setTitle("extract")
+									.setTitle("Extract")
 									.setIcon("search")
 									.onClick(async ()=>{
 										this.plugin.settings.wordsToExtract = data[i][j].displayText;
 										await this.plugin.saveSettings();
 										this.extractMode = true;
+										this.extractTask = false;
 										this.refreshView(false,false,false);
 									})
 							);
+							menu.addSeparator();
+							//新規タブに開く
+							menu.addItem((item)=>
+								item
+									.setTitle("Open in new tab")
+									.setIcon("file-plus")
+									.onClick(async()=> {
+										await this.app.workspace.getLeaf('tab').openFile(files[i]);
+										this.scrollToElement(data[i][j].position.start.line, data[i][j].position.start.col);
+
+									})
+							);
+							//右に開く
+							menu.addItem((item)=>
+								item
+									.setTitle("Open to the right")
+									.setIcon("separator-vertical")
+									.onClick(async()=> {
+										await this.app.workspace.getLeaf('split').openFile(files[i]);
+										this.scrollToElement(data[i][j].position.start.line, data[i][j].position.start.col);
+									})
+							);
+							//新規ウィンドウに開く
+							menu.addItem((item)=>
+								item
+									.setTitle("Open in new window")
+									.setIcon("box-select")
+									.onClick(async()=> {
+										await this.app.workspace.getLeaf('window').openFile(files[i]);
+										this.scrollToElement(data[i][j].position.start.line, data[i][j].position.start.col);
+									})
+							);
+
 							menu.showAtMouseEvent(event);
 						}
 					);
@@ -834,4 +1005,24 @@ export class DailyNoteOutlineView extends ItemView {
 		// アウトライン部分の描画実行
 		this.contentEl.appendChild(containerEl);
 	}
+
+	// スクロール
+	private scrollToElement(line: number, col: number): void {
+		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (view) {
+			view.editor.focus();
+			view.editor.setCursor (line, col);
+			view.editor.scrollIntoView( {
+				from: {
+					line: line,
+					ch:0
+				},
+				to: {
+					line: line,
+					ch:0
+				}
+			}, true);
+		}
+	}	
 }
+
