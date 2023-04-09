@@ -1,20 +1,29 @@
 import moment  from "moment";
 import { TFile, WorkspaceLeaf } from 'obsidian';
-import { createDailyNote, getDailyNote } from "obsidian-daily-notes-interface";
+import { createDailyNote, getDailyNote, createPeriodicNote, IGranularity, getDateUID, createQuarterlyNote, createYearlyNote} from "obsidian-daily-notes-interface";
 
 
-export async function createAndOpenDailyNote( date: moment, allFiles: Record<string,TFile> 
-
-): Promise<void> {
+export async function createAndOpenDailyNote( granularity: IGranularity, date: moment, allFiles: Record<string,TFile>): Promise<void> {
 	const { workspace } = window.app;
 
 	const createFile = async () => {
-		const newNote = await createDailyNote(date);
-
-		await workspace.getLeaf().openFile(newNote);
+		// createPeriodicNoteはquarter/yearには対応していないようなので分岐。
+		let newNote:TFile;
+		switch (granularity){
+			case 'quarter':
+				newNote = await createQuarterlyNote(date);
+				break;
+			case 'year':
+				newNote = await createYearlyNote(date);
+				break;
+			default:
+				newNote = await createPeriodicNote(granularity, date);
+		}
+				await workspace.getLeaf().openFile(newNote);
 
 	};
-	const dailynote = getDailyNote(date, allFiles);
+	const dailynote = allFiles[getDateUID(date, granularity)];
+	//const dailynote = getDailyNote(date, allFiles);
 	if (!dailynote){
 		await createFile();
 	} else {

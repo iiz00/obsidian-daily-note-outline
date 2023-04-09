@@ -1,7 +1,7 @@
 import { Plugin, Pos, TFile, WorkspaceLeaf } from 'obsidian';
 
 // Daily Note Interface
-import { getAllDailyNotes, getDailyNote, getDateFromFile } from "obsidian-daily-notes-interface";
+import { getAllDailyNotes, getDailyNote, getDateFromFile, IGranularity } from "obsidian-daily-notes-interface";
 // moment.js
 import moment from "moment";
 
@@ -15,7 +15,13 @@ export interface DailyNoteOutlineSettings {
 	initialSearchType: string; //forward or backward 特定日から前方探索or当日から後方探索
 	offset: number;		// 未来の日付も含む場合何日分含めるか number of future days to show 
 	onset: string;		// 特定日からforwardに探索する場合の起点日 onset date
-	duration: number;	// 探索日数 number of days to search per page
+	duration:{
+		day:number;
+		week:number;
+		month:number;
+		quarter:number;
+		year:number;
+	} // 探索日数 number of days to search per page
 	showElements:{
 		heading: boolean,
 		link: boolean,
@@ -91,6 +97,9 @@ export interface DailyNoteOutlineSettings {
 	repeatHeadingPrefix: string; // none, level, level-1
 	addCheckboxText: boolean;
 
+	periodicNotesEnabled: boolean;
+	calendarSetsEnabled: boolean;
+	attachWeeklyNotesName: boolean;
 }
 
 // 設定項目デフォルト
@@ -98,7 +107,13 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 	initialSearchType: 'backward',
 	offset: 7,
 	onset: '2020-03-30',
-	duration: 28,
+	duration: {
+		day:28,
+		week:12,
+		month:12,
+		quarter:8,
+		year:3
+	},
 	showElements: {
 		heading: true,
 		link: true,
@@ -173,7 +188,11 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 	},
 	repeatHeadingPrefix:'none',
 	addCheckboxText: false,
-	
+
+	// dailyNoteCore: true,
+	periodicNotesEnabled: true,
+	calendarSetsEnabled: true,
+	attachWeeklyNotesName: true,
 
 }
 
@@ -196,9 +215,28 @@ export interface OutlineData {
 	task?: string|undefined;
 }
 
+export const DAYS_PER_UNIT ={
+	day: 1,
+	week: 7,
+	month: 30,
+	quarter: 90,
+	year:365
+}
+
+export const GRANULARITY_LIST: IGranularity[] = ['day','week','month','quarter','year']
+
+export const GRANULARITY_TO_PERIODICITY = {
+	day: 'daily',
+	week: 'weekly',
+	month: 'monthly',
+	quarter: 'quarterly',
+	year: 'yearly'
+} 
+
 export default class DailyNoteOutlinePlugin extends Plugin {
 
 	settings: DailyNoteOutlineSettings;
+	view: DailyNoteOutlineView;
 
 	async onload() {
 		
@@ -206,7 +244,7 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 		//register custome view according to Devloper Docs
 		this.registerView(
 			DailyNoteOutlineViewType,
-			(leaf) => new DailyNoteOutlineView(leaf, this, this.settings)
+			(leaf) => (this.view = new DailyNoteOutlineView(leaf, this, this.settings))
 		);
 
 		//コマンド追加
@@ -273,6 +311,11 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		// v0.6.0以前の設定データに対して互換性を維持するための対応
+		// 0.6．0以前はdurationは number型だったが、 day~yearのプロパティを持つオブジェクトに変更した。
+		if (typeof this.settings.duration === "number"){
+			this.settings.duration = DEFAULT_SETTINGS.duration;
+		}
 	}
 
 	async saveSettings() {
