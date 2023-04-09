@@ -2,7 +2,8 @@ import DailyNoteOutlinePlugin, { DEFAULT_SETTINGS } from "src/main";
 import { App, PluginSettingTab, Setting } from "obsidian";
 import { appHasDailyNotesPluginLoaded } from "obsidian-daily-notes-interface";
 
-import moment from "moment"
+import moment from "moment";
+
 
 export class DailyNoteOutlineSettingTab extends PluginSettingTab {
     plugin: DailyNoteOutlinePlugin;
@@ -19,7 +20,6 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
 
         // デイリーノートのチェック(periodic notes だけでもonになっていれば回避)
         if (!appHasDailyNotesPluginLoaded()) {
-            console.log('Daily Note disabled');
             this.containerEl.createDiv("settings-banner", (banner) => {
                 banner.createEl("h3", {
                     text: "Daily Notes plugin not enabled",
@@ -44,6 +44,8 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                       this.plugin.settings.initialSearchType = value;
                       this.display();
                       await this.plugin.saveSettings();
+                      this.plugin.view.resetSearchRange();
+                      this.plugin.view.refreshView(false,true,true);
                     })
             });
 
@@ -53,21 +55,18 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
             .addText((text) => {
                 text.inputEl.setAttr('type','number');
                 text
-                    .setPlaceholder(String(DEFAULT_SETTINGS.duration))
-                    .setValue(String(this.plugin.settings.duration))
-                    /*
-                    .onChange(async (value) =>{
-                        this.plugin.settings.duration = Number(value);
-                        await this.plugin.saveSettings();
-                       
-                    }) */
+                    .setPlaceholder(String(DEFAULT_SETTINGS.duration.day))
+                    .setValue(String(this.plugin.settings.duration.day))
+
                 text.inputEl.onblur = async (e: FocusEvent) => {
                     let parsed = parseInt((e.target as HTMLInputElement).value,10);
                     if (parsed <= 0 || parsed >=366){
-                        parsed = DEFAULT_SETTINGS.duration
+                        parsed = DEFAULT_SETTINGS.duration.day
                     }
-                    this.plugin.settings.duration = parsed;
+                    this.plugin.settings.duration.day = parsed;
                     await this.plugin.saveSettings();
+                    this.plugin.view.resetSearchRange();
+                    this.plugin.view.refreshView(false,true,true);
                 }
                     
             });
@@ -83,11 +82,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                 text
                     .setPlaceholder(String(DEFAULT_SETTINGS.offset))
                     .setValue(String(this.plugin.settings.offset))
-                    /*
-                    .onChange(async (value) =>{
-                        this.plugin.settings.offset = Number(value);
-                        await this.plugin.saveSettings();
-                    }) */
+
                 text.inputEl.onblur = async (e: FocusEvent) => {
                     let inputedValue = Number((e.target as HTMLInputElement).value);
                     if (inputedValue < 0){
@@ -97,6 +92,8 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     }
                     this.plugin.settings.offset = inputedValue;
                     await this.plugin.saveSettings();
+                    this.plugin.view.resetSearchRange();
+                    this.plugin.view.refreshView(false,true,true);
                 }
             });
 
@@ -109,8 +106,10 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     .setPlaceholder(DEFAULT_SETTINGS.onset)
                     .setValue(this.plugin.settings.onset)
                     .onChange(async (value) =>{
-                                                this.plugin.settings.onset = value;
-                            await this.plugin.saveSettings();
+                        this.plugin.settings.onset = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.view.resetSearchRange();
+                        this.plugin.view.refreshView(false,true,true);   
             
                         // 入力場面でのバリデーション、断念…
                         /*
@@ -121,13 +120,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                             this.containerEl.createEl("h4", {
                                 text: "invalid date",
                               });
-                            console.log(this.plugin.settings.onset, moment(this.plugin.settings.onset));
                         }
-                        
-                        console.log('ひづけ後',this.plugin.settings.onset);
-                        //console.log('isMoment',moment.isMoment(this.plugin.settings.onset));
-                        //console.log('isMomentPlus',moment.isMoment(moment(this.plugin.settings.onset)),moment(this.plugin.settings.onset));
-                        //console.log('isValid',moment(this.plugin.settings.onset,"YYYY-MM-DD").isValid());
                         */
                     })
             });
@@ -142,6 +135,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         this.plugin.settings.showElements.heading = value;
                         this.display();
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     })
             });
 
@@ -155,6 +149,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         this.plugin.settings.showElements.link = value;
                         this.display();
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     })
             });
 
@@ -167,6 +162,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         this.plugin.settings.showElements.tag = value;
                         this.display();
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     })
 
             });
@@ -180,6 +176,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         this.plugin.settings.showElements.listItems = value;
                         this.display();
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     })
 
             });
@@ -195,6 +192,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                             this.plugin.settings.allRootItems = value;
                             this.display();
                             await this.plugin.saveSettings();
+                            this.plugin.view.refreshView(false,false,true);
                         })
 
             });
@@ -209,6 +207,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                             this.plugin.settings.allTasks = value;
                             this.display();
                             await this.plugin.saveSettings();
+                            this.plugin.view.refreshView(false,false,true);
                         })
             });
             new Setting(containerEl)
@@ -222,6 +221,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                             this.plugin.settings.taskOnly = value;
                             this.display();
                             await this.plugin.saveSettings();
+                            this.plugin.view.refreshView(false,false,true);
                         })
             });
             new Setting(containerEl)
@@ -234,6 +234,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                             this.plugin.settings.hideCompletedTasks = value;
                             this.display();
                             await this.plugin.saveSettings();
+                            this.plugin.view.refreshView(false,false,true);
                         })
             });
         }
@@ -241,17 +242,18 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
         // 表示する情報
         new Setting(containerEl)
         .setName("Display file information")
-        .setDesc("display the number of lines of the file / days from the base date with the file name")
+        .setDesc("display the number of lines of the file / distance from the base date with the file name")
         .addDropdown((dropdown) => {
             dropdown
                 .addOption("none", "none")
                 .addOption("lines","lines")
-                .addOption("days","days")
+                .addOption("days","distance")   // periodic notes に対応するならdays に限らなくなるのでdistanceとした
                 .setValue(this.plugin.settings.displayFileInfo)
                 .onChange(async (value) => {
                   this.plugin.settings.displayFileInfo = value;
                   this.display();
                   await this.plugin.saveSettings();
+                  this.plugin.view.refreshView(false,false,true);
                 })
         });
 
@@ -271,9 +273,161 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                   this.plugin.settings.viewPosition = value;
                   this.display();
                   await this.plugin.saveSettings();
+                  this.plugin.view.refreshView(false,false,true);
                 })
         });
-        
+
+        // Periodic Notes対応のオンオフ
+        this.containerEl.createEl("h4", {
+            text: "Periodic Notes",
+            cls: 'setting-category'
+        });
+
+        if (!app.plugins.plugins['periodic-notes']){
+            this.containerEl.createEl("p", {
+                text: "Periodic Notes community plugin is not enabled",
+                cls:"setting-item-description",
+            });
+        } else {
+            const verCheck =  Number(app.plugins.plugins['periodic-notes']?.manifest.version.split(".")[0]);
+            if (verCheck >= 1) {   
+                new Setting(containerEl)
+                    .setName("calendar sets")
+                    .setDesc("enable calendar sets feature. You have to activate and configure the beta version of the Periodic Notes Plugin first.")
+                    .addToggle((toggle) => {
+                        toggle
+                            .setValue(this.plugin.settings.calendarSetsEnabled)
+                            .onChange(async (value) => {
+                                this.plugin.settings.calendarSetsEnabled = value;
+                                this.display();
+                                await this.plugin.saveSettings();
+                                this.plugin.view.resetSearchRange();
+                                this.plugin.view.refreshView(true,true,true);    
+                            })
+                    });
+            }
+
+            new Setting(containerEl)
+                .setName("periodic notes")
+                .setDesc("enable weekly/monthly/quarterly/yearly notes. You have to activate and configure the Periodic Notes Plugin first.")
+                .addToggle((toggle) => {
+                    toggle
+                        .setValue(this.plugin.settings.periodicNotesEnabled)
+                        .onChange(async (value) => {
+                            this.plugin.settings.periodicNotesEnabled = value;
+                            this.display();
+                            await this.plugin.saveSettings();
+                            this.plugin.view.resetSearchRange();
+                            this.plugin.view.refreshView(true,true,true);   
+                        })
+                });
+            
+            if (this.plugin.settings.periodicNotesEnabled){
+
+                this.containerEl.createEl("p", {
+                    text: "Search duration for periodic notes",
+                    cls: 'setting-category'
+                });
+
+                new Setting(containerEl)
+                .setName("weekly notes")
+                .setClass('setting-indent')
+                .setDesc("number of weeks to search per page (default = 12)")
+                .addText((text) => {
+                    text.inputEl.setAttr('type','number');
+                    text
+                        .setPlaceholder(String(DEFAULT_SETTINGS.duration.week))
+                        .setValue(String(this.plugin.settings.duration.week))
+                    text.inputEl.onblur = async (e: FocusEvent) => {
+                        let parsed = parseInt((e.target as HTMLInputElement).value,10);
+                        if (parsed <= 0 || parsed >=366){
+                            parsed = DEFAULT_SETTINGS.duration.week
+                        }
+                        this.plugin.settings.duration.week = parsed;
+                        await this.plugin.saveSettings();
+                        this.plugin.view.resetSearchRange();
+                        this.plugin.view.refreshView(false,true,true);
+                    }
+                });
+
+                new Setting(containerEl)
+                .setName("monthly notes")
+                .setClass('setting-indent')
+                .setDesc("number of months to search per page (default = 12)")
+                .addText((text) => {
+                    text.inputEl.setAttr('type','number');
+                    text
+                        .setPlaceholder(String(DEFAULT_SETTINGS.duration.month))
+                        .setValue(String(this.plugin.settings.duration.month))
+                    text.inputEl.onblur = async (e: FocusEvent) => {
+                        let parsed = parseInt((e.target as HTMLInputElement).value,10);
+                        if (parsed <= 0 || parsed >=366){
+                            parsed = DEFAULT_SETTINGS.duration.month
+                        }
+                        this.plugin.settings.duration.month = parsed;
+                        await this.plugin.saveSettings();
+                        this.plugin.view.resetSearchRange();
+                        this.plugin.view.refreshView(false,true,true);
+                    }
+                });
+
+                new Setting(containerEl)
+                .setName("quarterly notes")
+                .setClass('setting-indent')
+                .setDesc("number of quarters to search per page (default = 8)")
+                .addText((text) => {
+                    text.inputEl.setAttr('type','number');
+                    text
+                        .setPlaceholder(String(DEFAULT_SETTINGS.duration.quarter))
+                        .setValue(String(this.plugin.settings.duration.quarter))
+                    text.inputEl.onblur = async (e: FocusEvent) => {
+                        let parsed = parseInt((e.target as HTMLInputElement).value,10);
+                        if (parsed <= 0 || parsed >=366){
+                            parsed = DEFAULT_SETTINGS.duration.quarter
+                        }
+                        this.plugin.settings.duration.quarter = parsed;
+                        await this.plugin.saveSettings();
+                        this.plugin.view.resetSearchRange();
+                        this.plugin.view.refreshView(false,true,true);
+                    }
+                });
+
+                new Setting(containerEl)
+                .setName("yearly notes")
+                .setClass('setting-indent')
+                .setDesc("number of years to search per page (default = 12)")
+                .addText((text) => {
+                    text.inputEl.setAttr('type','number');
+                    text
+                        .setPlaceholder(String(DEFAULT_SETTINGS.duration.year))
+                        .setValue(String(this.plugin.settings.duration.year))
+                    text.inputEl.onblur = async (e: FocusEvent) => {
+                        let parsed = parseInt((e.target as HTMLInputElement).value,10);
+                        if (parsed <= 0 || parsed >=366){
+                            parsed = DEFAULT_SETTINGS.duration.year
+                        }
+                        this.plugin.settings.duration.year = parsed;
+                        await this.plugin.saveSettings();
+                        this.plugin.view.resetSearchRange();
+                        this.plugin.view.refreshView(false,true,true);
+                    }
+                });
+            }
+                new Setting(containerEl)
+                .setName("attach date range to weekly notes")
+                .setDesc("display date range next to weekly notes' name")
+                .addToggle((toggle) => {
+                    toggle
+                        .setValue(this.plugin.settings.attachWeeklyNotesName)
+                        .onChange(async (value) => {
+                            this.plugin.settings.attachWeeklyNotesName = value;
+                            this.display();
+                            await this.plugin.saveSettings();
+                            this.plugin.view.refreshView(false,false,true);
+                        })
+                });
+        }
+
         //表示する見出しレベル
         this.containerEl.createEl("h4", {
             text: "Headings",
@@ -295,6 +449,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                                 this.plugin.settings.headingLevel[ index ] = value;
                                 this.display();
                                 await this.plugin.saveSettings();
+                                this.plugin.view.refreshView(false,false,true);
                             })
                     });
             });
@@ -320,6 +475,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     this.plugin.settings.inlinePreview = value;
                     this.display();
                     await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 })
 
         });
@@ -334,6 +490,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     this.plugin.settings.tooltipPreview = value;
                     this.display();
                     await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 })
 
         });
@@ -354,6 +511,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     this.plugin.settings.tooltipPreviewDirection = value;
                     this.display();
                     await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                     })
             });
         }
@@ -373,6 +531,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     const inputedValue = (e.target as HTMLInputElement).value;
                     this.plugin.settings.wordsToIgnore.heading = inputedValue.split('\n');
                     await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 }
             });
         }
@@ -387,6 +546,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     const inputedValue = (e.target as HTMLInputElement).value;
                     this.plugin.settings.wordsToIgnore.link = inputedValue.split('\n');
                     await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 }
             });
         }
@@ -401,6 +561,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     const inputedValue = (e.target as HTMLInputElement).value;
                     this.plugin.settings.wordsToIgnore.tag = inputedValue.split('\n');
                     await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 }
             });
         }
@@ -415,6 +576,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     const inputedValue = (e.target as HTMLInputElement).value;
                     this.plugin.settings.wordsToIgnore.listItems = inputedValue.split('\n');
                     await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 }
             });
         }
@@ -428,11 +590,15 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
             text: "If you specify one outline element type and words to include, only elements which belong to the included elements are displayed.",
             cls:"setting-item-description",
         });
+        this.containerEl.createEl("p", {
+            text: "**NOTE**: If Include filter is set incorrectly, a number of outlines may not be displayed. In such a case, try setting 'Element type for include' to 'no Include filter'.",
+            cls:"setting-item-description",
+        });
         new Setting(containerEl)
         .setName("Element type for include")
         .addDropdown((dropdown) => {
             dropdown
-                .addOption("none", "none")
+                .addOption("none", "no Include filter")
                 .addOption("heading","heading")
                 .addOption("link","link")
                 .addOption("tag","tag")
@@ -442,6 +608,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                   this.plugin.settings.includeOnly = value;
                   this.display();
                   await this.plugin.saveSettings();
+                  this.plugin.view.refreshView(false,false,true);
                 })
         });
 
@@ -456,6 +623,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     const inputedValue = (e.target as HTMLInputElement).value;
                     this.plugin.settings.wordsToInclude = inputedValue.split('\n');
                     await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 }
             });
 
@@ -470,6 +638,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         this.plugin.settings.includeBeginning = value;
                         this.display();
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     })
 
             });
@@ -498,6 +667,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                   this.plugin.settings.primeElement = value;
                   this.display();
                   await this.plugin.saveSettings();
+                  this.plugin.view.refreshView(false,false,true);
                 })
         });
 
@@ -511,6 +681,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     const inputedValue = (e.target as HTMLInputElement).value;
                     this.plugin.settings.wordsToExclude.heading = inputedValue.split('\n');
                     await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 }
             });
         }
@@ -525,6 +696,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     const inputedValue = (e.target as HTMLInputElement).value;
                     this.plugin.settings.wordsToExclude.link = inputedValue.split('\n');
                     await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 }
             });
         }
@@ -540,6 +712,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     const inputedValue = (e.target as HTMLInputElement).value;
                     this.plugin.settings.wordsToExclude.tag = inputedValue.split('\n');
                     await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 }
             });
         }
@@ -554,6 +727,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     const inputedValue = (e.target as HTMLInputElement).value;
                     this.plugin.settings.wordsToExclude.listItems = inputedValue.split('\n');
                     await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 }
             });
         }
@@ -584,6 +758,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     this.plugin.settings.icon.note = value;
                     this.display();
                     await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 })
         });
 
@@ -601,6 +776,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     const inputedValue = (e.target as HTMLInputElement).value;
                     this.plugin.settings.customIcon.note = inputedValue;
                     await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 };
             });
         }
@@ -630,6 +806,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                       this.plugin.settings.icon.heading = value;
                       this.display();
                       await this.plugin.saveSettings();
+                      this.plugin.view.refreshView(false,false,true);
                     })
             });
 
@@ -647,6 +824,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         const inputedValue = (e.target as HTMLInputElement).value;
                         this.plugin.settings.customIcon.heading = inputedValue;
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     };
                 });
             }
@@ -664,6 +842,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         this.plugin.settings.prefix.heading = inputedValue;
                         this.display();
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     };
                 });
 
@@ -681,6 +860,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                               this.plugin.settings.repeatHeadingPrefix = value;
                               this.display();
                               await this.plugin.saveSettings();
+                              this.plugin.view.refreshView(false,false,true);
                             })
                     });
             }
@@ -694,6 +874,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         this.plugin.settings.indent.heading = value;
                         this.display();
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     })
 
             });
@@ -719,6 +900,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                       this.plugin.settings.icon.link = value;
                       this.display();
                       await this.plugin.saveSettings();
+                      this.plugin.view.refreshView(false,false,true);
                     })
             });
 
@@ -736,6 +918,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         const inputedValue = (e.target as HTMLInputElement).value;
                         this.plugin.settings.customIcon.link = inputedValue;
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     };
                 });
             }
@@ -753,6 +936,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         this.plugin.settings.prefix.link = inputedValue;
                         this.display();
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                 };
             });
            
@@ -779,6 +963,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                       this.plugin.settings.icon.tag = value;
                       this.display();
                       await this.plugin.saveSettings();
+                      this.plugin.view.refreshView(false,false,true);
                     })
             });
 
@@ -796,6 +981,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         const inputedValue = (e.target as HTMLInputElement).value;
                         this.plugin.settings.customIcon.tag = inputedValue;
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     };
                 });
             }
@@ -813,6 +999,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         this.plugin.settings.prefix.tag = inputedValue;
                         this.display();
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                 };
             });
            
@@ -842,6 +1029,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                       this.plugin.settings.icon.listItems = value;
                       this.display();
                       await this.plugin.saveSettings();
+                      this.plugin.view.refreshView(false,false,true);
                     })
             });
 
@@ -859,6 +1047,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         const inputedValue = (e.target as HTMLInputElement).value;
                         this.plugin.settings.customIcon.listItems = inputedValue;
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     };
                 });
             }
@@ -876,6 +1065,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         this.plugin.settings.prefix.listItems = inputedValue;
                         this.display();
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                 };
             });
             
@@ -899,6 +1089,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                       this.plugin.settings.icon.task = value;
                       this.display();
                       await this.plugin.saveSettings();
+                      this.plugin.view.refreshView(false,false,true);
                     })
             });
 
@@ -916,6 +1107,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         const inputedValue = (e.target as HTMLInputElement).value;
                         this.plugin.settings.customIcon.task = inputedValue;
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     };
                 });
             }
@@ -933,6 +1125,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         this.plugin.settings.prefix.task = inputedValue;
                         this.display();
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                 };
             });
             new Setting(containerEl)
@@ -946,6 +1139,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         this.plugin.settings.addCheckboxText = value;
                         this.display();
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     })
 
             });
@@ -969,6 +1163,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                       this.plugin.settings.icon.taskDone = value;
                       this.display();
                       await this.plugin.saveSettings();
+                      this.plugin.view.refreshView(false,false,true);
                     })
             });
 
@@ -986,6 +1181,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         const inputedValue = (e.target as HTMLInputElement).value;
                         this.plugin.settings.customIcon.taskDone = inputedValue;
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     };
                 });
             }
@@ -1003,6 +1199,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                         this.plugin.settings.prefix.taskDone = inputedValue;
                         this.display();
                         await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                 };
             });
            
