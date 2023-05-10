@@ -38,7 +38,9 @@ To display the outline, choose "Daily Note Outline: Open Outline" in the command
 ## How to use
 To change the date range to display, click on the left and right arrows.<br>
 To return to the initial date range, click on the house icon.<br>
-Click on the refresh icon to redraw the outline, e.g., if you have changed the settings.<br>
+Click on the refresh icon to redraw the outline.<br>
+Click on the gear icon to open setting (Right-clicking opens a context menu where you can quickly change several settings).
+Click on the calendar with plus icon to create/open today's daily note (you can create/open tomorrow's daily note by right-clicking).
 Click on each outline element to open its location.<br>
 Push Ctrl key to preview.<br>
 I recommend that you first set the display/hide settings for each outline element (headings, links, tags, and list items) in the settings.
@@ -163,6 +165,9 @@ Sets the appearance of each outline element when it is displayed.
 An icon and prefix string can be added to each element.
 If you choose 'custom' for icon, enter icon name of the Lucide icon (https://lucide.dev/ ) in 'Custom icon' field. Some icons do not seem to be able to be displayed.
 
+#### Indent other than headings
+When you choose 'follow preceding headings', other elements are indented according to the preceding heading level.
+
 #### Headings: Repeat heading prefix
 If you enter a prefix for headings, turning this item on will repeat the prefix for the number of levels of headings.
 
@@ -172,6 +177,9 @@ Indentation is added according to the level of the heading.
 #### Tasks: Add checkbox text to prefix
 Append a string indicating the status of the checkbox to the end of the task prefix.
 
+### Debug
+#### show debug information
+If turned on, some debug infromation is displayed in the console. 
 
 ## Acknowledgement
 In developing this plugin, I have use many great plugins in Obsidian community as references. In particular, <br>
@@ -200,6 +208,16 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 	- better preview
 
 ## Changelog
+- 1.1.0
+	- Improvements
+		- Several settings can now be changed from the context menu of the Settings button (right click on the gear icon).
+		- Outline elements other than headings can now be indented according to the previous heading when specified in Settings->Appearance.
+		- Day of the week, week number, and first tag have been added to the list of items that can be selected in Settings->Display file information.
+		- Linked notes can now be opened from the context menu of link elements.
+	- Fixed
+		- Fixed: When using the Periodic Notes plugin v0.0.17, weekly notes would not be displayed in DNO if the first day of the week was set to Monday.
+		- Added a setting to display debugging information in the console at the bottom of the settings.
+			- At this time, this feature is intended to narrow down the cause of reports of inability to switch to weekly notes when using the beta version of the Periodic Notes plugin.
 - 1.0.0
 	- Test new function
 		- Support for Periodic Notes plugin (display periodic notes, calendar sets)
@@ -300,7 +318,9 @@ Daily NoteコアプラグインもしくはPeriodic Notesプラグインが有�
 ## How to use 使い方
 表示する日付の範囲を変更したいときは、左右の矢印をクリックして下さい。<br>
 家のアイコンをクリックすると初期設定の範囲に戻ります。<br>
-設定を変更したときなど、再描画が必要なときは更新アイコンをクリックして下さい。<br>
+更新アイコンをクリックするとビューを再描画します。<br>
+歯車アイコンをクリックすると設定を開きます。右クリックでいくつかの項目を素早く切り替えられるコンテキストメニューを開きます。<br>
+プラスマークのついたカレンダーアイコンをクリックすると今日のデイリーノートを作成するか開きます。右クリックから翌日のデイリーノートを開けます。<br>
 各アウトライン要素をクリックするとその場所を開きます。<br>
 各要素の上でCtrlキーを押すとホバープレビューを表示します。<br>
 使用にあたり、まず設定画面で各アウトライン要素（見出し、リンク、タグ、リスト項目）ごとに表示/非表示を設定することをお勧めします。
@@ -422,6 +442,9 @@ Includeフィルターでいずれかのタイプが指定されていた場合�
 各要素にはアイコンおよびprefix文字列を付加することができます。
 アイコンでcustomを選んだ場合、Lucide (https://lucide.dev/ )のアイコン名を入力して下さい。一部のアイコンは表示できないようです。
 
+#### Indent other than headings
+設定すると、見出し以外のアウトライン要素が直前の見出しと同じだけ（またはさらに1段階多く）インデントされます。
+
 #### Headings: Repeat heading prefix
 headingsのprefixを入力した場合、この項目をオンにすると、見出しのレベルの数だけprefixが繰り返されます。
 
@@ -430,6 +453,10 @@ headingsのprefixを入力した場合、この項目をオンにすると、見
 
 #### Tasks: Add checkbox text to prefix
 タスクのprefixの最後にcheckboxの状態を示す文字列を付加します。
+
+### Debug
+#### show debug information
+オンにするとデバッグのためのいくつかの情報をconsoleに表示します。
 
 ## Acknowledgement 謝辞
 本プラグインの作成にあたり、多くの素晴らしいObsidianのプラグインを参考にさせて頂きました。特に、<br>

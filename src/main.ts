@@ -23,9 +23,9 @@ export interface DailyNoteOutlineSettings {
 		year:number;
 	} // 探索日数 number of days to search per page
 	showElements:{
-		heading: boolean,
-		link: boolean,
-		tag: boolean,
+		heading: boolean;
+		link: boolean;
+		tag: boolean;
 		listItems: boolean
 	};
 	headingLevel: boolean[];
@@ -33,13 +33,16 @@ export interface DailyNoteOutlineSettings {
 	allTasks: boolean;
 	taskOnly: boolean;
 	hideCompletedTasks: boolean;
-	displayFileInfo: string; // none || lines || days
+	displayFileInfo: string; // none || lines || days   legacy
+	displayFileInfoDaily: string; // none,lines,days,dow(day of the week),dowshort,weeknumber,tag
+	displayFileInfoPeriodic: string; // none,lines,days,tag
+
 	viewPosition: string;	//right || left || tab || split || popout 
 
 	wordsToIgnore:{	//filter
-		heading: string[],
-		link: string[],
-		tag: string[],
+		heading: string[];
+		link: string[];
+		tag: string[];
 		listItems: string[]
 	};
 
@@ -54,31 +57,31 @@ export interface DailyNoteOutlineSettings {
 
 	primeElement: string; // none || heading, link, tag, listItems
 	wordsToExclude:{
-		heading: string[],
-		link: string[],
-		tag: string[],
+		heading: string[];
+		link: string[];
+		tag: string[];
 		listItems: string[]
 	};
 	wordsToExtract: string;
 
 	icon:{	//icon for each type of element
-		heading: string,
-		link: string,
-		tag: string,
-		listItems: string,
-		note: string,
-		task: string,
-		taskDone: string,
+		heading: string;
+		link: string;
+		tag: string;
+		listItems: string;
+		note: string;
+		task: string;
+		taskDone: string;
 	};
 
 	customIcon:{
-		heading: string,
-		link: string,
-		tag: string,
-		listItems: string,
-		note: string,
-		task: string,
-		taskDone: string,
+		heading: string;
+		link: string;
+		tag: string;
+		listItems: string;
+		note: string;
+		task: string;
+		taskDone: string;
 	};
 
 	indent:{
@@ -86,6 +89,8 @@ export interface DailyNoteOutlineSettings {
 		link: boolean;
 		listItems: boolean;
 	};
+	indentFollowHeading: number; // 0 don't follow 1:same level 2: level+1
+
 	prefix:{
 		heading: string;
 		link: string;
@@ -100,6 +105,8 @@ export interface DailyNoteOutlineSettings {
 	periodicNotesEnabled: boolean;
 	calendarSetsEnabled: boolean;
 	attachWeeklyNotesName: boolean;
+
+	showDebugInfo: boolean;
 }
 
 // 設定項目デフォルト
@@ -127,6 +134,8 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 	taskOnly: false,
 	hideCompletedTasks: false,
 	displayFileInfo: 'lines',
+	displayFileInfoDaily: 'lines', // none,lines,days,dow(day of the week),dowshort,weeknumber,tag
+	displayFileInfoPeriodic: 'lines', // none,lines,days,tag
 	viewPosition: 'right',
 
 	wordsToIgnore:{
@@ -178,6 +187,7 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 		link: true,
 		listItems: true,
 	},
+	indentFollowHeading: 0,
 	prefix:{
 		heading: '',
 		link: '',
@@ -193,6 +203,8 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 	periodicNotesEnabled: true,
 	calendarSetsEnabled: true,
 	attachWeeklyNotesName: true,
+
+	showDebugInfo: false,
 
 }
 
@@ -233,6 +245,23 @@ export const GRANULARITY_TO_PERIODICITY = {
 	year: 'yearly'
 } 
 
+export const FILEINFO_TO_DISPLAY = {
+	none: 'none',
+	lines: 'num of lines',
+	days: 'distance',
+	tag: 'first tag'
+}
+
+export const FILEINFO_TO_DISPLAY_DAY = {
+	none: 'none',
+	lines: 'num of lines',
+	days: 'distance',
+	tag: 'first tag',
+	dow: 'day of week',
+	dowshort: 'day of week(short)',
+	weeknumber: 'week number'
+}
+
 export default class DailyNoteOutlinePlugin extends Plugin {
 
 	settings: DailyNoteOutlineSettings;
@@ -257,6 +286,8 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 				this.checkView();
 			}
 		});
+
+
 		
 		// // get Today's Note: DailyNoteInterfaceのtestのための開発用コマンド。
 		// // 全DailyNoteを取得したのち、本日分を取得して、consoleに表示する。
@@ -270,7 +301,7 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 		// 		console.log(allDailyNotes);
 		// 		console.log(typeof allDailyNotes);
 		// 		console.log('momentそのまま',moment());
-		// 		console.log(`DailyNoteInterfaceのキーの形式に。day-${moment().startOf('day').format()}`);
+		// 		console.log(`DailyNoteInterfaceのキーの形式に。day-${window.moment().startOf('day').format()}`);
 
 		// 		//本日のデイリーノートを取得
 		// 		const todaysNote = getDailyNote(moment(), allDailyNotes);
