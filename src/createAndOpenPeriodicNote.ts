@@ -67,7 +67,7 @@ export async function createAndOpenPeriodicNote( granularity: IGranularity, date
     	);
     const destPath = await getNoteCreationPath(window.app, filename, config);
     file = await window.app.vault.create(destPath, renderedContents);
-  }
+	}
 
 	await workspace.getLeaf().openFile(file);
 }

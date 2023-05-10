@@ -6,7 +6,7 @@ import { getAllDailyNotes, getDateFromFile, createDailyNote, getDateUID,
 	getAllWeeklyNotes, getAllMonthlyNotes, getAllQuarterlyNotes, getAllYearlyNotes, IGranularity } from "obsidian-daily-notes-interface";
 import moment from "moment"
 
-import DailyNoteOutlinePlugin, { DailyNoteOutlineSettings, OutlineData, FileInfo, DAYS_PER_UNIT,GRANULARITY_LIST, GRANULARITY_TO_PERIODICITY} from 'src/main';
+import DailyNoteOutlinePlugin, { DailyNoteOutlineSettings, OutlineData, FileInfo, DAYS_PER_UNIT,GRANULARITY_LIST, GRANULARITY_TO_PERIODICITY, FILEINFO_TO_DISPLAY, FILEINFO_TO_DISPLAY_DAY} from 'src/main';
 
 import { createAndOpenDailyNote } from 'src/createAndOpenDailyNote';
 import { ModalExtract } from 'src/modalExtract';
@@ -40,8 +40,8 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 		latest: moment,
 		earliest: moment
 	} = {
-		latest: moment(),
-		earliest: moment()
+		latest: window.moment(),
+		earliest: window.moment()
 	};
 	private outlineData: OutlineData[][];
 
@@ -91,7 +91,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 		this.flagRedraw = false;
 		this.flagRegetAll = false; 
 		this.registerEvent(this.app.metadataCache.on('changed', (file) => {
-			if (this.targetFiles.includes(file)){
+			if (this.targetFiles?.includes(file)){
 				this.flagRedraw = true;
 				debouncerRequestRefresh.call(this);
 			}
@@ -136,6 +136,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 		this.resetSearchRange();
 		
 		this.refreshView(true, true, true);
+	
 	}
 
 	private async bootDelay(): Promise<void> {
@@ -158,7 +159,10 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 	// getOutlineがtrue: 対象ファイル群のファイル情報、アウトライン情報を取得
 	// その後UI部分とアウトライン部分を描画
 	async refreshView(regetAll: boolean, getTarget:boolean, getOutline:boolean){
-		await this.checkPeriodicNotes();
+		if (this.settings.showDebugInfo){
+			console.log('DNO:start refreshing view. CalendarSets:',this.calendarSets);
+		}
+		this.verPN = await this.checkPeriodicNotes();
 
 		if (this.verPN != 2){
 			// core daily note/ periodic notes plugin v0.x の場合
@@ -180,6 +184,9 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 				this.activeSet = 0;
 			}
 			if (!this.calendarSets[this.activeSet][GRANULARITY_LIST[this.activeGranularity]]?.enabled){
+				if (this.settings.showDebugInfo){
+					console.log('DNO: Calender set is not enabled. this.activeGranularity is set to 0. Calendarsets, this.activeSet, this.activeGranularity:',this.calendarSets, this.activeSet, this.activeGranularity);
+				}
 				this.activeGranularity = 0;
 			}
 
@@ -205,7 +212,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 		let checkDateEarliest = this.searchRange.earliest.clone();
 
 		if (this.settings.initialSearchType =='backward'){
-			if(checkDate.isSame(moment(),'day')){
+			if(checkDate.isSame(window.moment(),'day')){
 				checkDate.add(Math.ceil(this.settings.offset/DAYS_PER_UNIT[granularity]),granularity);
 			}
 			checkDateEarliest = this.searchRange.latest.clone().subtract(this.settings.duration[granularity] - 1,granularity);
@@ -232,29 +239,30 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 		let checkDateEarliest = this.searchRange.earliest.clone();
 		
 		if (this.settings.initialSearchType=='backward'){
-			if(checkDate.isSame(moment(),'day')){
+			if(checkDate.isSame(window.moment(),'day')){
 				checkDate.add(Math.ceil(this.settings.offset/DAYS_PER_UNIT[granularity]),granularity);
 			}
 			checkDateEarliest = this.searchRange.latest.clone().subtract(this.settings.duration[granularity] - 1,granularity);
 		} else {
 			// forward searchのとき
 			checkDate = this.searchRange.earliest.clone().add(this.settings.duration[granularity] - 1,granularity);
-		}	
+		}
+		if (this.settings.showDebugInfo){
+			console.log('DNO:searching caches of Periodic Notes... calendar set:',calendarSet);
+		}
 
 		while (checkDate.isSameOrAfter(checkDateEarliest,granularity)){
 			const caches = this.app.plugins.getPlugin("periodic-notes").cache.getPeriodicNotes(calendarSet.id,granularity,checkDate);
-			if (caches) {
-				for (const file of caches){
-					// ファイルパスにPNのフォルダパスが含まれていない && PNのフォルダパスが指定されている のときは処理をスキップ
-					// ＊現状のPNベータでは、カレンダーセットの指定にかかわらず全セットに含まれるPNが返されるようであるため、各セットのフォルダパスでフィルタリングする
-					// ただしファオルダパスが指定されていないときはスキップ
-					if (!file.filePath.startsWith(calendarSet[granularity].folder.concat("/")) && calendarSet[granularity].folder){
-						continue;
-					}
-					const fileobj = this.app.vault.getAbstractFileByPath(file.filePath);
-					if (fileobj instanceof TFile){
-						files.push(fileobj);
-					}
+			for (const file of caches){
+				// ファイルパスにPNのフォルダパスが含まれていない && PNのフォルダパスが指定されている のときは処理をスキップ
+				// ＊現状のPNベータでは、カレンダーセットの指定にかかわらず全セットに含まれるPNが返されるようであるため、各セットのフォルダパスでフィルタリングする
+				// ただしフォルダパスが指定されていないときはスキップ
+				if (!file.filePath.startsWith(calendarSet[granularity].folder.concat("/")) && calendarSet[granularity].folder){
+					continue;
+				}
+				const fileobj = this.app.vault.getAbstractFileByPath(file.filePath);
+				if (fileobj instanceof TFile){
+					files.push(fileobj);
 				}
 			}
 			checkDate.subtract(1,granularity);
@@ -451,6 +459,80 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 				this.app.setting.openTabById(this.plugin.manifest.id);
 			}
 		);
+		navActionButton.addEventListener(
+			"contextmenu",
+			(event: MouseEvent) => {
+				const menu = new Menu();
+				for (const element in this.settings.showElements){
+					const icon = ( this.settings.showElements[element] == true)? "check":"";
+					menu.addItem((item)=>
+						item
+							.setTitle(`show ${element}`)
+							.setIcon(icon)
+							.onClick(async()=>{
+								this.settings.showElements[element] = !this.settings.showElements[element];
+								await this.plugin.saveSettings();
+								this.refreshView(false,false,false);
+							})
+					);
+				}
+				if (this.settings.showElements.listItems){
+					const icon = (this.settings.taskOnly)? "check": "";
+					menu.addItem((item)=>
+						item
+							.setTitle("tasks only")
+							.setIcon(icon)
+							.onClick(async()=>{
+								this.settings.taskOnly = !this.settings.taskOnly;
+								await this.plugin.saveSettings();
+								this.refreshView(false,false,false);
+							})
+					);
+				}
+				menu.addSeparator();
+				if (granularity =='day'){
+					for (let index in FILEINFO_TO_DISPLAY_DAY){
+						const icon = ( index == this.settings.displayFileInfoDaily)? "check":"";
+						menu.addItem((item)=>
+							item
+								.setTitle(FILEINFO_TO_DISPLAY_DAY[index])
+								.setIcon(icon)
+								.onClick( async()=> {
+									this.settings.displayFileInfoDaily = index;
+									await this.plugin.saveSettings();
+									this.refreshView(false,false,false)
+								}))
+					}
+				} else {
+					for (let index in FILEINFO_TO_DISPLAY){
+						const icon = ( index == this.settings.displayFileInfoPeriodic)? "check":"";
+						menu.addItem((item)=>
+							item
+								.setTitle(FILEINFO_TO_DISPLAY[index])
+								.setIcon(icon)
+								.onClick( async()=> {
+									this.settings.displayFileInfoPeriodic = index;
+									await this.plugin.saveSettings();
+									this.refreshView(false,false,false)
+								}))
+					}
+				}
+				menu.addSeparator();
+
+				const icon = (this.settings.tooltipPreview)? "check":"";
+				menu.addItem((item)=>
+					item
+						.setTitle("show tooltip preview")
+						.setIcon(icon)
+						.onClick(async()=>{
+							this.settings.tooltipPreview = !this.settings.tooltipPreview;
+							await this.plugin.saveSettings();
+							this.refreshView(false,false,false);
+						})
+				);
+				menu.showAtMouseEvent(event);
+			}
+		)
 
 		// デイリーノート作成
 		navActionButton = navButtonContainer.createDiv("clickable-icon nav-action-button");
@@ -479,7 +561,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 			"click",
 			async (event:MouseEvent) =>{
 				event.preventDefault;
-				const date = moment();
+				const date = window.moment();
 
 				if (this.verPN == 2){
 					createAndOpenPeriodicNote( granularity, date, this.calendarSets[this.activeSet]);
@@ -498,7 +580,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 						.setTitle(labelForNext)
 						.setIcon("calendar-plus")
 						.onClick(async ()=> {
-							const date = moment().add(1,granularity);
+							const date = window.moment().add(1,granularity);
 							if (this.verPN == 2){
 								createAndOpenPeriodicNote(granularity, date, this.calendarSets[this.activeSet]); 
 							} else {
@@ -568,7 +650,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 
 		if (this.settings.initialSearchType =='backward'){
 			earliest = latest.clone().subtract(this.settings.duration[granularity] - 1 ,granularity);
-			if (latest.isSame(moment(),"day")){
+			if (latest.isSame(window.moment(),"day")){
 				latest = latest.add(Math.ceil(this.settings.offset/DAYS_PER_UNIT[granularity]),granularity);
 			}
 		}
@@ -585,14 +667,14 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 			"click",
 			async (event:MouseEvent) =>{
 				event.preventDefault();
-				const onsetDate = moment(this.settings.onset,"YYYY-MM-DD");
+				const onsetDate = window.moment(this.settings.onset,"YYYY-MM-DD");
 				if (onsetDate.isValid()){
 					this.searchRange.earliest = onsetDate;
 					this.searchRange.latest = onsetDate.clone().add(this.settings.duration.day -1,'days');
 				} else {  
 					// onsetDateが不正なら当日起点のbackward searchを行う
-					this.searchRange.latest = moment().startOf('day');
-					this.searchRange.earliest = moment().startOf('day').subtract(this.settings.duration.day - 1,'days')
+					this.searchRange.latest = window.moment().startOf('day');
+					this.searchRange.earliest = window.moment().startOf('day').subtract(this.settings.duration.day - 1,'days')
 				}
 				this.refreshView(false, true, true);
 			}
@@ -606,6 +688,9 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 			navGranularity.addEventListener(
 				"click",
 				(evet:MouseEvent) =>{
+					if (this.settings.showDebugInfo){
+						console.log('DNO:clicked to change granularity. verPN, calendarSets:',this.activeGranularity, this.verPN, this.calendarSets);
+					}
 					const initialGranularity = this.activeGranularity;
 					do {
 						this.activeGranularity = (this.activeGranularity + 1) % GRANULARITY_LIST.length;
@@ -707,6 +792,10 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 		// 表示オンになっている見出しレベルの最高値
 		let maxLevel = this.settings.headingLevel.indexOf(true);
 
+		// 最新の見出しレベル
+		let latestHeadingLevel = 0;
+
+
 		for (let i=0; i<files.length ; i++){
 
 			// デイリーノートのタイトル部分作成 = フォルダ作成
@@ -744,14 +833,33 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 			dailyNoteTitleEl.createDiv("nav-folder-title-content").setText(name);
 
 			//ファイル名の後の情報を表示
-			switch (this.settings.displayFileInfo) {
+			const infoToDisplay = (this.activeGranularity == 0 ) ? this.settings.displayFileInfoDaily : this.settings.displayFileInfoPeriodic;
+
+			switch (infoToDisplay) {
 				case 'lines':
 					dailyNoteTitleEl.dataset.subinfo = info[i].numOfLines.toString();
 					break;
 				case 'days':
-					let basedate = (this.settings.initialSearchType == "backward")? moment(): this.settings.onset;
+					let basedate = (this.settings.initialSearchType == "backward")? window.moment(): window.moment(this.settings.onset);
 					dailyNoteTitleEl.dataset.subinfo = Math.abs(info[i].date.diff(basedate.startOf(GRANULARITY_LIST[this.activeGranularity]),GRANULARITY_LIST[this.activeGranularity])).toString();
 					break;
+				case 'dow':
+					dailyNoteTitleEl.dataset.subinfo = info[i].date.format("dddd");
+					break;
+				case 'dowshort':
+					dailyNoteTitleEl.dataset.subinfo = info[i].date.format("ddd");
+					break;
+				case 'weeknumber':
+					dailyNoteTitleEl.dataset.subinfo = info[i].date.format("[w]ww");
+					break;
+				case 'tag':
+					let firsttagIndex = data[i].findIndex( (element,index) =>
+						data[i][index].typeOfElement =='tag');
+					if (firsttagIndex >= 0){
+						dailyNoteTitleEl.dataset.subinfo = data[i][firsttagIndex].displayText;
+					}
+					break;
+					
 				case 'none':
 					break;
 				default:
@@ -897,6 +1005,8 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 					
 					// headings
 					if (element == 'heading'){
+						// 最新の見出しレベルを取得
+						latestHeadingLevel = data[i][j].level;
 						// 特定の見出しレベルが非表示の場合、該当すればスキップ
 						if ( !this.settings.headingLevel[data[i][j].level - 1]){
 							continue;
@@ -973,13 +1083,21 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 						}
 					}
 
+					let indent: number = 0.5;
+					// 見出しのインデント
 					if (element =='heading' && this.settings.indent.heading == true){
-						outlineTitle.style.paddingLeft = `${(data[i][j].level - maxLevel - 1)*1.5 + 0.5}em`;
+						indent = indent + (data[i][j].level - (maxLevel + 1))*1.5;
+					}
+					// 見出し以外のインデント
+					if (element !='heading' && this.settings.indentFollowHeading){
+						indent = indent + ((latestHeadingLevel - (maxLevel + 1) + (this.settings.indentFollowHeading == 2 ? 1: 0))*1.5);
 					}
 					// リンクが前のエレメントと同じ行だった場合インデント付加
 					if (element =='link' && data[i][j].position.start.line == data[i][j-1]?.position.start.line){
-						outlineTitle.style.paddingLeft = '2em';
+						indent = indent + 1.5;
 					}
+
+					outlineTitle.style.paddingLeft = `${indent}em`;
 
 
 					if (element =='listItems' && data[i][j].task !== void 0) {
@@ -1061,7 +1179,6 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 							event.preventDefault();
 							await this.app.workspace.getLeaf().openFile(files[i]);
 							const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-
 							if (view) {
 								view.editor.focus();
 
@@ -1112,6 +1229,20 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 									})
 							);
 							menu.addSeparator();
+							// リンクだったらリンク先を直接開く
+							if (element =='link'){
+								menu.addItem((item)=>
+									item
+										.setTitle("Open linked file")
+										.setIcon("links-going-out")
+										.onClick(async()=>{
+											const linkedFile = app.metadataCache.getFirstLinkpathDest(data[i][j].link, files[i].path);
+											this.app.workspace.getLeaf().openFile(linkedFile);
+										})
+								);
+								menu.addSeparator();
+							}
+						
 							//新規タブに開く
 							menu.addItem((item)=>
 								item
@@ -1213,31 +1344,42 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 	// 探索範囲を設定に合わせて初期化
 	public resetSearchRange():void {
 		if (this.settings.initialSearchType == 'forward'){
-			const onsetDate = moment(this.settings.onset,"YYYY-MM-DD");
+			const onsetDate = window.moment(this.settings.onset,"YYYY-MM-DD");
 			if (onsetDate.isValid()){
 				this.searchRange.earliest = onsetDate;
 				this.searchRange.latest = onsetDate.clone().add(this.settings.duration.day -1,'days');
 			} else {  
 				// onsetDateが不正なら当日起点のbackward searchを行う
 				new Notice('onset date is invalid');
-				this.searchRange.latest = moment().startOf('day');
-				this.searchRange.earliest = moment().startOf('day').subtract(this.settings.duration.day - 1,'days')
+				this.searchRange.latest = window.moment().startOf('day');
+				this.searchRange.earliest = window.moment().startOf('day').subtract(this.settings.duration.day - 1,'days')
 			}
 		}
 		
 		if (this.settings.initialSearchType == 'backward'){
-			this.searchRange.latest = moment().startOf('day');
-			this.searchRange.earliest = moment().startOf('day').subtract(this.settings.duration.day - 1 ,'days');
+			this.searchRange.latest = window.moment().startOf('day');
+			this.searchRange.earliest = window.moment().startOf('day').subtract(this.settings.duration.day - 1 ,'days');
 		} 
 	}
 
 	// Periodic Notesの状態をチェック  return 0:オフ 1:v0.x.x 2:v1.0.0-
 	private async checkPeriodicNotes(): Promise<number> {
+		
+		if (this.settings.showDebugInfo){
+			console.log('DNO:checking the version of Periodic Notes plugin');
+		}
+
 		if (app.plugins.plugins['periodic-notes']){
 			if (Number(app.plugins.plugins['periodic-notes'].manifest.version.split(".")[0]) >=1){
 				// ver 1.0.0以上
 				this.calendarSets = this.app.plugins.getPlugin("periodic-notes")?.calendarSetManager.getCalendarSets();
-				if (!this.calendarSets){
+
+				if (this.settings.showDebugInfo){
+					console.log('return of this.app.PN.calendarSetManager.getCalendarSets(): ',this.app.plugins.getPlugin("periodic-notes")?.calendarSetManager.getCalendarSets());
+					console.log('return of window.app.PN.calendarSetManager.getCalendarSets(): ',window.app.plugins.getPlugin("periodic-notes")?.calendarSetManager.getCalendarSets());
+				}
+				
+				if (!this.calendarSets.length){
 					new Notice('failed to import calendar sets to Daily Note Outline');
 				}
 				const initialGranularity = this.activeGranularity;
@@ -1248,6 +1390,10 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 					}
 				}	
 				this.app.workspace.requestSaveLayout();
+
+				if (this.settings.showDebugInfo){
+					console.log('obtained verPN: ', this.verPN ,' calendarSets: ', this.calendarSets);
+				}
 				return 2;
 			} else {
 				// ver 0.x.x
@@ -1292,4 +1438,3 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 		}
 	}
 }
-

@@ -19,10 +19,10 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
         containerEl.empty();
 
         // デイリーノートのチェック(periodic notes だけでもonになっていれば回避)
-        if (!appHasDailyNotesPluginLoaded()) {
+        if (!app.internalPlugins.plugins['daily-notes']?.enabled && !app.plugins.plugins['periodic-notes']) {
             this.containerEl.createDiv("settings-banner", (banner) => {
                 banner.createEl("h3", {
-                    text: "Daily Notes plugin not enabled",
+                    text: "Neither Daily Note plugin nor Periodic Notes community plugin is enabled",
                 });
             });
         }
@@ -241,21 +241,46 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
 
         // 表示する情報
         new Setting(containerEl)
-        .setName("Display file information")
-        .setDesc("display the number of lines of the file / distance from the base date with the file name")
+        .setName("Display file information for daily notes")
+        .setDesc("choose type of file information to display with the file name for daily notes")
         .addDropdown((dropdown) => {
             dropdown
                 .addOption("none", "none")
-                .addOption("lines","lines")
-                .addOption("days","distance")   // periodic notes に対応するならdays に限らなくなるのでdistanceとした
-                .setValue(this.plugin.settings.displayFileInfo)
+                .addOption("lines","lines of the note")
+                .addOption("days","days from base date")
+                .addOption("dow","day of the week")
+                .addOption("dowshort", "day of the week(short)")
+                .addOption("weeknumber", "week number")
+                .addOption("tag","first tag")  
+                .setValue(this.plugin.settings.displayFileInfoDaily)
                 .onChange(async (value) => {
-                  this.plugin.settings.displayFileInfo = value;
+                  this.plugin.settings.displayFileInfoDaily = value;
                   this.display();
                   await this.plugin.saveSettings();
                   this.plugin.view.refreshView(false,false,true);
                 })
         });
+
+        if (this.plugin.settings.periodicNotesEnabled){
+            new Setting(containerEl)
+            .setName("Display file information for periodic notes")
+            .setDesc("choose type of file information to display for periodic notes other than daily notes")
+            .addDropdown((dropdown) => {
+                dropdown
+                    .addOption("none", "none")
+                    .addOption("lines","lines of the note")
+                    .addOption("days","distance from base date")   // periodic notes に対応するならdays に限らなくなるのでdistanceとした
+                    .addOption("tag","first tag")
+                    .setValue(this.plugin.settings.displayFileInfoPeriodic)
+                    .onChange(async (value) => {
+                      this.plugin.settings.displayFileInfoPeriodic = value;
+                      this.display();
+                      await this.plugin.saveSettings();
+                      this.plugin.view.refreshView(false,false,true);
+                    })
+            });
+        }
+        
 
         // viewを表示する位置 （右サイドバー、左サイドバー、メインペイン）
         new Setting(containerEl)
@@ -738,6 +763,24 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
             cls: 'setting-category'
         });
 
+        // headingのインデントレベルにあわせて他の要素をインデントするか
+        new Setting(containerEl)
+        .setName("Indent other than headings")
+        .setDesc("Whether other elements should be indented to preceding headings")
+        .addDropdown((dropdown) => {
+            dropdown
+                .addOption("0","none")
+                .addOption("1","follow preceding heading")
+                .addOption("2","preceding heading + 1")
+                .setValue(String(this.plugin.settings.indentFollowHeading))
+                .onChange(async (value) => {
+                    this.plugin.settings.indentFollowHeading = Number(value);
+                    this.display();
+                    await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
+                })
+        });
+
         // デイリーノート
         this.containerEl.createEl("p", {
             text: "Notes",
@@ -1204,5 +1247,23 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
             });
            
         }
+
+        this.containerEl.createEl("h4", {
+            text: "Debug",
+            cls: 'setting-category'
+        });
+
+        new Setting(containerEl)
+                .setName("show debug information")
+                .setDesc("display debug information in the console")
+                .addToggle((toggle) => {
+                    toggle
+                        .setValue(this.plugin.settings.showDebugInfo)
+                        .onChange(async (value) => {
+                            this.plugin.settings.showDebugInfo = value;
+                            this.display();
+                            await this.plugin.saveSettings();
+                        })
+                });
     }
 }
