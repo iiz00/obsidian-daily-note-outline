@@ -208,6 +208,9 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 	- better preview
 
 ## Changelog
+- 1.1.1
+	- Fixed
+		- Fixed a problem that sometimes caused non .md files to be displayed unintentionally (you can redisplay them from settings -> others -> show only .md files).
 - 1.1.0
 	- Improvements
 		- Several settings can now be changed from the context menu of the Settings button (right click on the gear icon).
