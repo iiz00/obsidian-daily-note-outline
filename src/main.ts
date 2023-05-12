@@ -39,6 +39,8 @@ export interface DailyNoteOutlineSettings {
 
 	viewPosition: string;	//right || left || tab || split || popout 
 
+	markdownOnly: boolean;
+
 	wordsToIgnore:{	//filter
 		heading: string[];
 		link: string[];
@@ -137,6 +139,8 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 	displayFileInfoDaily: 'lines', // none,lines,days,dow(day of the week),dowshort,weeknumber,tag
 	displayFileInfoPeriodic: 'lines', // none,lines,days,tag
 	viewPosition: 'right',
+
+	markdownOnly: true,
 
 	wordsToIgnore:{
 		heading: [],

@@ -302,6 +302,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                 })
         });
 
+
         // Periodic Notes対応のオンオフ
         this.containerEl.createEl("h4", {
             text: "Periodic Notes",
@@ -1247,6 +1248,27 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
             });
            
         }
+
+
+        this.containerEl.createEl("h4", {
+            text: "Others",
+            cls: 'setting-category'
+        });
+
+        new Setting(containerEl)
+        .setName("Show only .md files")
+        .setDesc("Turn on if non-md files are displayed in the view")
+        .addToggle((toggle) => {
+            toggle
+                .setValue(this.plugin.settings.markdownOnly)
+                .onChange(async (value) => {
+                    this.plugin.settings.markdownOnly = value;
+                    this.display();
+                    await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
+                })
+        });
+
 
         this.containerEl.createEl("h4", {
             text: "Debug",

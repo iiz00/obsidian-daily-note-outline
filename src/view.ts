@@ -254,6 +254,10 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 		while (checkDate.isSameOrAfter(checkDateEarliest,granularity)){
 			const caches = this.app.plugins.getPlugin("periodic-notes").cache.getPeriodicNotes(calendarSet.id,granularity,checkDate);
 			for (const file of caches){
+				//ファイルパスが.mdで終わらなければ（マークダウンファイルでなければ）スキップ
+				if (this.settings.markdownOnly && !file.filePath.endsWith(".md")){
+					continue;
+				}
 				// ファイルパスにPNのフォルダパスが含まれていない && PNのフォルダパスが指定されている のときは処理をスキップ
 				// ＊現状のPNベータでは、カレンダーセットの指定にかかわらず全セットに含まれるPNが返されるようであるため、各セットのフォルダパスでフィルタリングする
 				// ただしフォルダパスが指定されていないときはスキップ
