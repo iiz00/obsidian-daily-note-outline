@@ -177,6 +177,10 @@ Indentation is added according to the level of the heading.
 #### Tasks: Add checkbox text to prefix
 Append a string indicating the status of the checkbox to the end of the task prefix.
 
+### Others
+#### Show only .md files / exactly matched files
+If you are using the beta version of the Periodic Notes plugin, a wider range of file names will be recognized as periodic notes. Each of these options hides files that are not md files or files that do not match the format.
+
 ### Debug
 #### show debug information
 If turned on, some debug infromation is displayed in the console. 
@@ -208,6 +212,9 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 	- better preview
 
 ## Changelog
+- 1.2.0
+	- Improvement
+		- If you are using the beta version of the Periodic Notes plugin, a wider range of file names will be recognized as periodic notes. If you turn on `Settings -> others -> Show only exactly matched files`, you will see only files that exactly match the format.
 - 1.1.1
 	- Fixed
 		- Fixed a problem that sometimes caused non .md files to be displayed unintentionally (you can redisplay them from settings -> others -> show only .md files).
@@ -456,6 +463,10 @@ headingsのprefixを入力した場合、この項目をオンにすると、見
 
 #### Tasks: Add checkbox text to prefix
 タスクのprefixの最後にcheckboxの状態を示す文字列を付加します。
+
+### Others
+#### Show only .md files / exactly matched files
+Periodic Notesプラグインのベータ版を使用している場合、より幅広いファイル名がperiodic notesとして認識されます。これらのオプションはそれぞれmdファイル以外、フォーマットに合致しないファイルを非表示にします。
 
 ### Debug
 #### show debug information
