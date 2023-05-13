@@ -254,8 +254,12 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 		while (checkDate.isSameOrAfter(checkDateEarliest,granularity)){
 			const caches = this.app.plugins.getPlugin("periodic-notes").cache.getPeriodicNotes(calendarSet.id,granularity,checkDate);
 			for (const file of caches){
+				//厳密にマッチしたファイル出なければスキップ
+				if ( this.settings.exactMatchOnly && !file?.matchData?.exact) {
+					continue;
+				}
 				//ファイルパスが.mdで終わらなければ（マークダウンファイルでなければ）スキップ
-				if (this.settings.markdownOnly && !file.filePath.endsWith(".md")){
+				if (this.settings.markdownOnly && !file?.filePath.endsWith(".md")){
 					continue;
 				}
 				// ファイルパスにPNのフォルダパスが含まれていない && PNのフォルダパスが指定されている のときは処理をスキップ
@@ -325,7 +329,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 					const element:OutlineData = {
 						typeOfElement : "link",
 						position : cache.links[j].position,
-						//マークダウンリンク に対応
+						//マークダウンリンクに対応
 						displayText : 
 							(cache.links[j].displayText =="") 
 							? cache.links[j].original.substring(1,cache.links[j].original.indexOf("]")) 

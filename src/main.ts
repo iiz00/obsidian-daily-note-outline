@@ -40,6 +40,7 @@ export interface DailyNoteOutlineSettings {
 	viewPosition: string;	//right || left || tab || split || popout 
 
 	markdownOnly: boolean;
+	exactMatchOnly: boolean;
 
 	wordsToIgnore:{	//filter
 		heading: string[];
@@ -141,6 +142,7 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 	viewPosition: 'right',
 
 	markdownOnly: true,
+	exactMatchOnly: false,
 
 	wordsToIgnore:{
 		heading: [],

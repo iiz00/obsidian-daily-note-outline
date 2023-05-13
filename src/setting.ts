@@ -1269,6 +1269,20 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                 })
         });
 
+        new Setting(containerEl)
+        .setName("Show only exactly matched files")
+        .setDesc("Turn on if you do not want to see files that do not exactly match the format")
+        .addToggle((toggle) => {
+            toggle
+                .setValue(this.plugin.settings.exactMatchOnly)
+                .onChange(async (value) => {
+                    this.plugin.settings.exactMatchOnly = value;
+                    this.display();
+                    await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
+                })
+        });
+
 
         this.containerEl.createEl("h4", {
             text: "Debug",
