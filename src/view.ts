@@ -785,8 +785,8 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 	private drawOutline( files: TFile[], info: FileInfo[], data: OutlineData[][]):void {
 
 		const containerEl: HTMLElement = createDiv("nav-files-container node-insert-event");
-		const rootEl: HTMLElement = containerEl.createDiv("nav-folder mod-root"); 
-		const rootChildrenEl: HTMLElement = rootEl.createDiv("nav-folder-children"); 
+		const rootEl: HTMLElement = containerEl.createDiv("tree-item nav-folder mod-root"); 
+		const rootChildrenEl: HTMLElement = rootEl.createDiv("tree-item-children nav-folder-children"); 
 
 		if (files.length == 0){
 			rootChildrenEl.createEl("h4",{
@@ -800,16 +800,18 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 		// 表示オンになっている見出しレベルの最高値
 		let maxLevel = this.settings.headingLevel.indexOf(true);
 
-		// 最新の見出しレベル
-		let latestHeadingLevel = 0;
+		
 
 
 		for (let i=0; i<files.length ; i++){
 
+			// 最新の見出しレベル
+			let latestHeadingLevel = 0;
+
 			// デイリーノートのタイトル部分作成 = フォルダ作成
-			const dailyNoteEl: HTMLDivElement = rootChildrenEl.createDiv("nav-folder");
-			const dailyNoteTitleEl: HTMLDivElement = dailyNoteEl.createDiv("nav-folder-title");
-			const dailyNoteChildrenEl: HTMLDivElement = dailyNoteEl.createDiv("nav-folder-children");
+			const dailyNoteEl: HTMLDivElement = rootChildrenEl.createDiv("tree-item nav-folder");
+			const dailyNoteTitleEl: HTMLDivElement = dailyNoteEl.createDiv("tree-item-self is-clickable mod-collapsible nav-folder-title");
+			const dailyNoteChildrenEl: HTMLDivElement = dailyNoteEl.createDiv("tree-item-children nav-folder-children");
 			//const collapseIconEl: HTMLDivElement = dailyNoteTitleEl.createDiv("nav-folder-collapse-indicator collapse-icon");
 			
 			/*いずれノートの折りたたみ処理を…
@@ -819,26 +821,31 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 			}
 			*/
 			
+			//  MNOに倣ったアイコン表示  ただし collapse-icon クラスをつけると縮小されたので除去
+			const noteCollapseIcon:HTMLElement = dailyNoteTitleEl.createDiv("tree-item-icon nav-folder-collapse-indicator");
+
 			//ファイル名にアイコンを付加
 			switch(this.settings.icon.note){
 				case 'none':
 					break;
 				case 'custom':
-					setIcon(dailyNoteTitleEl, this.settings.customIcon.note);
+					setIcon(noteCollapseIcon, this.settings.customIcon.note);
 					break;
 				default:
 					if (this.settings.icon.note){
-						setIcon(dailyNoteTitleEl, this.settings.icon.note);
+						setIcon(noteCollapseIcon, this.settings.icon.note);
 					}
 					break;
 			}
+
+			
 
 			//weekly noteの場合日付の範囲を付加表示
 			let name = files[i].basename;
 			if (this.settings.attachWeeklyNotesName && GRANULARITY_LIST[this.activeGranularity] =='week'){
 				name = name + " (" +this.fileInfo[i].date.clone().startOf('week').format("MM/DD [-] ") + this.fileInfo[i].date.clone().endOf('week').format("MM/DD") +")";
 			}
-			dailyNoteTitleEl.createDiv("nav-folder-title-content").setText(name);
+			dailyNoteTitleEl.createDiv("tree-item-inner nav-folder-title-content").setText(name);
 
 			//ファイル名の後の情報を表示
 			const infoToDisplay = (this.activeGranularity == 0 ) ? this.settings.displayFileInfoDaily : this.settings.displayFileInfoPeriodic;
@@ -1049,9 +1056,9 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 
 					//アウトライン要素部分作成
 					const outlineEl: HTMLElement = dailyNoteChildrenEl
-							.createDiv("nav-file");
+							.createDiv("tree-item nav-file");
 					//中身を設定
-					const outlineTitle: HTMLElement = outlineEl.createDiv("nav-file-title nav-action-button");
+					const outlineTitle: HTMLElement = outlineEl.createDiv("tree-item-self is-clickable nav-file-title");
 
 					//アイコン icon
 					switch(this.settings.icon[element]){
@@ -1098,7 +1105,8 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 					}
 					// 見出し以外のインデント
 					if (element !='heading' && this.settings.indentFollowHeading){
-						indent = indent + ((latestHeadingLevel - (maxLevel + 1) + (this.settings.indentFollowHeading == 2 ? 1: 0))*1.5);
+						const additionalIndent = (latestHeadingLevel - (maxLevel + 1) + (this.settings.indentFollowHeading == 2 ? 1: 0))*1.5;
+						indent = indent + (additionalIndent > 0 ? additionalIndent : 0);
 					}
 					// リンクが前のエレメントと同じ行だった場合インデント付加
 					if (element =='link' && data[i][j].position.start.line == data[i][j-1]?.position.start.line){
@@ -1117,7 +1125,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 					}
 					let dispText = this.stripMarkdownSympol(data[i][j].displayText);
 
-					outlineTitle.createDiv("nav-file-title-content").setText(prefix + dispText);
+					outlineTitle.createDiv("tree-item-inner nav-file-title-content").setText(prefix + dispText);
 
 					// インラインプレビュー
 					// リンクとタグは、アウトライン要素のあとに文字列が続く場合その行をプレビュー、そうでなければ次の行をプレビュー
@@ -1137,7 +1145,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 					if (this.settings.tooltipPreview){
 						let previewText2:string ='';
 						// まず次の表示要素の引数を特定
-						let endLine:Number = info[i].numOfLines - 1;  //初期値は文章末
+						let endLine:number = info[i].numOfLines - 1;  //初期値は文章末
 						let k = j +1; // 現在のアウトライン引数+1からループ開始
 						endpreviewloop: while (k< data[i].length) {
 							//表示するエレメントタイプであれば行を取得してループを打ち切る
@@ -1298,9 +1306,9 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 							continue;
 						} else {
 							const outlineEl: HTMLElement = dailyNoteChildrenEl
-									.createDiv("nav-file");
-							const outlineTitle: HTMLElement = outlineEl.createDiv("nav-file-title nav-action-button");
-							outlineTitle.createDiv("nav-file-title-content").setText(info[i].lines[j]);
+									.createDiv("tree-item nav-file");
+							const outlineTitle: HTMLElement = outlineEl.createDiv("tree-item-self is-clickable nav-file-title");
+							outlineTitle.createDiv("tree-item-inner nav-file-title-content").setText(info[i].lines[j]);
 							outlineTitle.addEventListener(
 								"click",
 								async(event: MouseEvent) => {
