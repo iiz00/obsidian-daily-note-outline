@@ -212,6 +212,9 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 	- better preview
 
 ## Changelog
+- 1.2.1
+	- Fixed
+		- Fixed a broken appearance with changes in Obsidian v1.3.1 (insider build).
 - 1.2.0
 	- Improvement
 		- If you are using the beta version of the Periodic Notes plugin, a wider range of file names will be recognized as periodic notes. If you turn on `Settings -> others -> Show only exactly matched files`, you will see only files that exactly match the format.

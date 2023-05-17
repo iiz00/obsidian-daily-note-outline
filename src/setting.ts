@@ -760,7 +760,7 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
 
         // 外観
         this.containerEl.createEl("h4", {
-            text: "Appearnce",
+            text: "Appearance",
             cls: 'setting-category'
         });
 
