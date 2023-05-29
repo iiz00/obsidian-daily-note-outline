@@ -1007,7 +1007,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 					//// 抽出 extract
 
 					if (this.extractMode == true) {
-						if (this.extractTask == false && !data[i][j].displayText.includes(this.settings.wordsToExtract)){
+						if (this.extractTask == false && !data[i][j].displayText.toLowerCase().includes(this.settings.wordsToExtract.toLowerCase())){
 							continue;
 						} else if (this.extractTask == true && data[i][j].task === void 0){
 							continue;
