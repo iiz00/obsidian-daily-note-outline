@@ -212,6 +212,9 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 	- better preview
 
 ## Changelog
+- 1.2.2
+	- Fixed
+		- Changed extract function to be case-insensitive.
 - 1.2.1
 	- Fixed
 		- Fixed a broken appearance with changes in Obsidian v1.3.1 (insider build).
