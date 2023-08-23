@@ -212,6 +212,11 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 	- better preview
 
 ## Changelog
+- 1.2.3
+	- Improvement
+		- When extraction is turned on, the icon color changes.
+	- Fixed
+		- Fixed Tooltip preview was not working properly due to recent Obsidian changes.
 - 1.2.2
 	- Fixed
 		- Changed extract function to be case-insensitive.
