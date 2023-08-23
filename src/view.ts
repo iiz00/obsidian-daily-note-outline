@@ -159,6 +159,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 	// getOutlineがtrue: 対象ファイル群のファイル情報、アウトライン情報を取得
 	// その後UI部分とアウトライン部分を描画
 	async refreshView(regetAll: boolean, getTarget:boolean, getOutline:boolean){
+		const startTime = performance.now();
 		if (this.settings.showDebugInfo){
 			console.log('DNO:start refreshing view. CalendarSets:',this.calendarSets);
 		}
@@ -197,8 +198,15 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 				this.fileInfo = await this.getFileInfo(this.targetFiles);
 				this.outlineData = await this.getOutline(this.targetFiles);
 			}
+
 			this.drawUI();
 			this.drawOutline(this.targetFiles, this.fileInfo, this.outlineData);
+
+			}
+			
+		const endTime = performance.now();
+		if (this.settings.showDebugInfo){
+			console.log ('DNO: time required to refresh view: ', endTime - startTime);
 		}
 	}
 
@@ -624,6 +632,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 			//抽出をオフに
 			navActionButton.ariaLabel = "unextract";
 			setIcon(navActionButton,"x-circle",20);
+			navActionButton.classList.add('is-active');
 			navActionButton.addEventListener(
 			"click",
 			async (event:MouseEvent) =>{
@@ -1184,7 +1193,8 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 						// 空行を除去
 						previewText2 = previewText2.replace(/\n$|\n(?=\n)/g,'');
 						outlineTitle.ariaLabel = previewText2;
-						outlineTitle.setAttribute('aria-label-position',this.settings.tooltipPreviewDirection);
+						outlineTitle.dataset.tooltipPosition = this.settings.tooltipPreviewDirection;
+						outlineTitle.setAttribute('aria-label-delay','10');
 						outlineTitle.setAttribute('aria-label-classes','daily-note-preview');
 					}
 					
