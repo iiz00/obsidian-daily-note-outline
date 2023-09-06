@@ -110,6 +110,46 @@ export interface DailyNoteOutlineSettings {
 	attachWeeklyNotesName: boolean;
 
 	showDebugInfo: boolean;
+
+	noteTitleBackgroundColor: string; // none, accent, custom
+	customNoteTitleBackgroundColor: {
+		accent: {
+			light: string;
+			dark: string;
+		};
+		custom: {
+			light: string;
+			dark: string;
+		};
+	};
+	customNoteTitleBackgroundColorHover: {
+		accent: {
+			light: string;
+			dark: string;
+		};
+		custom: {
+			light: string;
+			dark: string;
+		};
+	};
+
+	// 各デイリーノートの情報
+	fileFlag: {
+		[path: string]: {
+			'fold'?: boolean;
+		};
+	};
+
+	// taskのcustom status
+	taskIcon: {
+		[status: string]: {
+			symbol: string;
+			icon: string;
+		};
+	};
+
+	collapseAllAtStartup: boolean;
+
 }
 
 // 設定項目デフォルト
@@ -212,7 +252,62 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 
 	showDebugInfo: false,
 
+	noteTitleBackgroundColor: 'none', // none, accent, custom
+	customNoteTitleBackgroundColor: {
+		accent: {
+			light: '#E3E3E3',
+			dark: '#363636',
+		},
+		custom: {
+			light: '#BEBEBE',
+			dark: '#4E4E4E',
+		},
+	},
+	customNoteTitleBackgroundColorHover: {
+		accent: {
+			light: '#D3D3D3',
+			dark: '#464646',
+		},
+		custom: {
+			light: '#AEAEAE',
+			dark: '#5E5E5E',
+		},
+	},
+	
+	fileFlag: {},
+
+	// taskのcustom status
+	taskIcon: {
+		// todo: {symbol:' ', icon:'square'},
+		incomplete: {symbol:'/', icon:'columns'},
+		// done: {symbol:'x', icon:'check-square'},
+		canceled: {symbol:'-', icon:'minus-square'},
+		fowarded: {symbol:'>', icon:'send'},
+		scheduling: {symbol:'<', icon:'calendar'},
+		question: {symbol:'?', icon:'help-circle'},
+		important: {symbol:'!', icon:'alert-triangle'},
+		star: {symbol:'*', icon:'star'},
+		quote: {symbol:'"', icon:'quote'},
+		location: {symbol:'l', icon:'map-pin'},
+		bookmark: {symbol:'b', icon:'bookmark'},
+		information: {symbol:'i', icon:'info'},
+		savings: {symbol:'S', icon:'dollar-sign'},
+		idea: {symbol:'I', icon:'siren'},
+		pros: {symbol:'p', icon:'thumbs-up'},
+		cons: {symbol:'c', icon:'thumbs-down'},
+		fire: {symbol:'f', icon:'flame'},
+		key: {symbol:'k', icon:'key'},
+		win: {symbol:'w', icon:'cake'},
+		up: {symbol:'u', icon:'trending-up'},
+		down: {symbol:'d', icon:'trending-down'},
+	},
+
+	collapseAllAtStartup: false,
 }
+
+// export interface FileStatus {
+// 	isFolded: boolean;
+// }
 
 export interface FileInfo {
 	// file:TFile;
@@ -220,6 +315,7 @@ export interface FileInfo {
 	//content: string;
 	lines: string[];
 	numOfLines: number
+	isFolded: boolean;
 }
 
 export interface OutlineData {	

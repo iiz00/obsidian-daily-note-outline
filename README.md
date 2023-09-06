@@ -212,6 +212,18 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 	- better preview
 
 ## Changelog
+- 1.3.0
+	- New function
+		- Collapse notes
+			- Click the '>' icon next to the note title to collapse/expand
+			- Click on the '><(rotate)' icon at the top of DNO view to collapse/expand all notes
+	- Improvements
+		- Change background color of note titles (I recommend 'accent' for the default theme)
+		- Custom status icons for tasks can now be displayed
+			- The icons corresponding to custom statuses cannot be changed in the DNO settings screen, but can be changed by editing data.json directly.
+	- Changes
+		- The update button was removed and moved to the context menu of the home button as it is used infrequently.
+
 - 1.2.3
 	- Improvement
 		- When extraction is turned on, the icon color changes.
