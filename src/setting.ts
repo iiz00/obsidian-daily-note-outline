@@ -239,6 +239,20 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
             });
         }
 
+        new Setting(containerEl)
+            .setName("Collapse all at startup")
+            .setDesc("enable collapse all function at startup")
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.collapseAllAtStartup)
+                    .onChange(async (value) => {
+                        this.plugin.settings.collapseAllAtStartup = value;
+                        this.display();
+                        await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,false);
+                    })
+        });
+
         // 表示する情報
         new Setting(containerEl)
         .setName("Display file information for daily notes")
@@ -782,48 +796,131 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                 })
         });
 
-        // デイリーノート
-        this.containerEl.createEl("p", {
-            text: "Notes",
-            cls: 'setting-category'
-        });
-        
+        // ノートタイトルの背景色
         new Setting(containerEl)
-        .setName("Icon")
-        .setClass("setting-indent")
+        .setName("Note title background color")
+        .setDesc("No change: use the current CSS theme setting values. Accent: highlight file names. Custom: Specify any color code. Please update the view when you toggled Obsidian's base theme(light/dark). (default = no change)")
         .addDropdown((dropdown) => {
             dropdown
-                .addOption("none", "none")
-                .addOption("file","file")
-                .addOption("calendar","calendar")
-                .addOption("calendar-days","calendar-days")
-                .setValue(this.plugin.settings.icon.note)
+                .addOption("none", "no change")
+                .addOption("accent","accent")
+                .addOption("custom","custom")
+                .setValue(this.plugin.settings.noteTitleBackgroundColor)
                 .onChange(async (value) => {
-                    this.plugin.settings.icon.note = value;
+                    this.plugin.settings.noteTitleBackgroundColor = value;
                     this.display();
                     await this.plugin.saveSettings();
                     this.plugin.view.refreshView(false,false,true);
                 })
         });
 
-        if (this.plugin.settings.icon.note == 'custom'){
+        if (this.plugin.settings.noteTitleBackgroundColor =='custom'){
             new Setting(containerEl)
-            .setName("Custom icon")
-            .setClass("setting-indent-2")
-            .setDesc("enter Lucide Icon name")
+            .setName("Custom note title background color (light)")
+            .setClass("setting-indent")
+            .setDesc("Specify background color (ex. #FFFFFF or rgb(255,255,255))")
             .addText((text) => {
                 text.inputEl.setAttr('type','string');
                 text
-                    .setPlaceholder(DEFAULT_SETTINGS.customIcon.note)
-                    .setValue(this.plugin.settings.customIcon.note);
-                text.inputEl.onblur = async (e: FocusEvent) => {
+                    .setValue(this.plugin.settings.customNoteTitleBackgroundColor.custom.light);
+                text.inputEl.onblur = async (e: FocusEvent)=>{
                     const inputedValue = (e.target as HTMLInputElement).value;
-                    this.plugin.settings.customIcon.note = inputedValue;
+                    this.plugin.settings.customNoteTitleBackgroundColor.custom.light = inputedValue;
                     await this.plugin.saveSettings();
                     this.plugin.view.refreshView(false,false,true);
-                };
+                }
+            });
+
+            new Setting(containerEl)
+            .setName("Custom note title background color (light, on hover)")
+            .setClass("setting-indent")
+            .setDesc("Specify background color on hover (ex. #FFFFFF or rgb(255,255,255))")
+            .addText((text) => {
+                text.inputEl.setAttr('type','string');
+                text
+                    .setValue(this.plugin.settings.customNoteTitleBackgroundColorHover.custom.light);
+                text.inputEl.onblur = async (e: FocusEvent)=>{
+                    const inputedValue = (e.target as HTMLInputElement).value;
+                    this.plugin.settings.customNoteTitleBackgroundColorHover.custom.light = inputedValue;
+                    await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
+                }
+            });
+            new Setting(containerEl)
+            .setName("Custom note title background color (dark)")
+            .setClass("setting-indent")
+            .setDesc("Specify background color (ex. #FFFFFF or rgb(255,255,255))")
+            .addText((text) => {
+                text.inputEl.setAttr('type','string');
+                text
+                    .setValue(this.plugin.settings.customNoteTitleBackgroundColor.custom.dark);
+                text.inputEl.onblur = async (e: FocusEvent)=>{
+                    const inputedValue = (e.target as HTMLInputElement).value;
+                    this.plugin.settings.customNoteTitleBackgroundColor.custom.dark = inputedValue;
+                    await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
+                }
+            });
+
+            new Setting(containerEl)
+            .setName("Custom note title background color (dark, on hover)")
+            .setClass("setting-indent")
+            .setDesc("Specify background color on hover (ex. #FFFFFF or rgb(255,255,255))")
+            .addText((text) => {
+                text.inputEl.setAttr('type','string');
+                text
+                    .setValue(this.plugin.settings.customNoteTitleBackgroundColorHover.custom.dark);
+                text.inputEl.onblur = async (e: FocusEvent)=>{
+                    const inputedValue = (e.target as HTMLInputElement).value;
+                    this.plugin.settings.customNoteTitleBackgroundColorHover.custom.dark = inputedValue;
+                    await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
+                }
             });
         }
+
+        // デイリーノート
+        // this.containerEl.createEl("p", {
+        //     text: "Notes",
+        //     cls: 'setting-category'
+        // });
+        
+        // new Setting(containerEl)
+        // .setName("Icon")
+        // .setClass("setting-indent")
+        // .addDropdown((dropdown) => {
+        //     dropdown
+        //         .addOption("none", "none")
+        //         .addOption("file","file")
+        //         .addOption("calendar","calendar")
+        //         .addOption("calendar-days","calendar-days")
+        //         .setValue(this.plugin.settings.icon.note)
+        //         .onChange(async (value) => {
+        //             this.plugin.settings.icon.note = value;
+        //             this.display();
+        //             await this.plugin.saveSettings();
+        //             this.plugin.view.refreshView(false,false,true);
+        //         })
+        // });
+
+        // if (this.plugin.settings.icon.note == 'custom'){
+        //     new Setting(containerEl)
+        //     .setName("Custom icon")
+        //     .setClass("setting-indent-2")
+        //     .setDesc("enter Lucide Icon name")
+        //     .addText((text) => {
+        //         text.inputEl.setAttr('type','string');
+        //         text
+        //             .setPlaceholder(DEFAULT_SETTINGS.customIcon.note)
+        //             .setValue(this.plugin.settings.customIcon.note);
+        //         text.inputEl.onblur = async (e: FocusEvent) => {
+        //             const inputedValue = (e.target as HTMLInputElement).value;
+        //             this.plugin.settings.customIcon.note = inputedValue;
+        //             await this.plugin.saveSettings();
+        //             this.plugin.view.refreshView(false,false,true);
+        //         };
+        //     });
+        // }
 
         
         

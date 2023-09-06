@@ -68,6 +68,16 @@
     flex-shrink: 0;
 }
 
+.workspace-leaf-content[data-type="daily-note-outline"] .nav-folder-collapse-indicator .is-open{
+    transform: rotate(90deg);
+}
+
+/* 折りたたみアイコンの範囲 */
+.workspace-leaf-content[data-type="daily-note-outline"] .tree-item-icon.collapse-icon{
+    padding: 4px;
+}
+
+
 /* obsidian ver1.2で項目にhover時、色が変わらなくなった事への暫定対応*/
 /* .workspace-leaf-content[data-type="daily-note-outline"] .nav-file-title:hover,
 .workspace-leaf-content[data-type="daily-note-outline"] .nav-folder-title:hover {
