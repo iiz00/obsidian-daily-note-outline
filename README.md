@@ -212,6 +212,9 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 	- better preview
 
 ## Changelog
+- 1.3.1
+	- Fixed
+		- Fixed DNO view becomes active when starting Obsidian
 - 1.3.0
 	- New function
 		- Collapse notes

@@ -385,7 +385,7 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 			name: 'Open Outline',
 
 			callback: async ()=> {
-				this.checkView();
+				this.checkView(true);
 			}
 		});
 
@@ -425,12 +425,10 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 		// 	}
 		// });
 	
-	// viewの更新(アップデート時用)
-	if (this.app.workspace.layoutReady){
-		this.checkView();
-	} else {
-		this.registerEvent(this.app.workspace.on('layout-ready', this.checkView));
-	}
+	//  viewの更新(アップデート時用)
+	this.app.workspace.onLayoutReady(async()=>{
+		this.checkView(false);
+	})
 
 	// This adds a settings tab so the user can configure various aspects of the plugin
 	this.addSettingTab(new DailyNoteOutlineSettingTab(this.app, this));
@@ -455,7 +453,7 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	checkView = async():Promise<void> => {
+	checkView = async(activateView: boolean):Promise<void> => {
 
 		let [leaf] = this.app.workspace.getLeavesOfType(DailyNoteOutlineViewType);
 		if (!leaf) {
@@ -478,8 +476,10 @@ export default class DailyNoteOutlinePlugin extends Plugin {
 			}
 			await leaf.setViewState({ type: DailyNoteOutlineViewType});
 		}
-		this.app.workspace.revealLeaf(leaf);
-
+		
+		if (activateView) {
+			this.app.workspace.revealLeaf(leaf);
+		}
 	} 
 	 
 }
