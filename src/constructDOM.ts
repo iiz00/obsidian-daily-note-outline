@@ -1,6 +1,6 @@
-import { MarkdownView, Menu, TFile, setIcon } from "obsidian";
+import { App, MarkdownView, Menu, TFile, parseLinktext, setIcon, setTooltip } from "obsidian";
 import { FileInfo, OutlineData, GRANULARITY_LIST } from "./main";
-import { addFlag, checkFlag, removeFlag } from "./util";
+import { addFlag, checkFlag, getSubpathPosition, removeFlag } from "./util";
 import { DailyNoteOutlineViewType } from "./view";
 
 //  アウトライン描画	
@@ -12,7 +12,7 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
 
     if (files.length == 0){
         rootChildrenEl.createEl("h4",{
-            text: "No daily/periodic note found"
+            text: "Daily/periodic note loading error(try clicking on the Home icon)"
         });
     }
 
@@ -34,8 +34,7 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
         const dailyNoteEl: HTMLElement = rootChildrenEl.createDiv("tree-item nav-folder");
         const dailyNoteTitleEl: HTMLElement = dailyNoteEl.createDiv("tree-item-self is-clickable mod-collapsible nav-folder-title");
         const dailyNoteChildrenEl: HTMLElement = dailyNoteEl.createDiv("tree-item-children nav-folder-children");
-        //const collapseIconEl: HTMLElement = dailyNoteTitleEl.createDiv("nav-folder-collapse-indicator collapse-icon");
-        
+
         // ノートタイトルに背景色を負荷
         const changeColor = this.settings.noteTitleBackgroundColor;
 
@@ -52,9 +51,7 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
                 this.style.backgroundColor =customColor[changeColor][theme];
             });
         }
-        
 
-        
         //  折りたたみアイコン
         const noteCollapseIcon:HTMLElement = dailyNoteTitleEl.createDiv("tree-item-icon collapse-icon nav-folder-collapse-indicator");
         setIcon(noteCollapseIcon,"right-triangle");
@@ -98,10 +95,10 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
                     dailyNoteChildrenEl.style.display = 'block';
 
                 } else {
-                    // 開いている場合	
+                    // 開いている場合
                 
                     // 個別フォールドフラグを追加
-                    if (!this.collapseAll) {   
+                    if (!this.collapseAll) {
                         addFlag(files[i],'fold',this.settings);
                     }
                     await this.plugin.saveSettings();
@@ -149,7 +146,6 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
                     dailyNoteTitleEl.dataset.subinfo = data[i][firsttagIndex].displayText;
                 }
                 break;
-                
             case 'none':
                 break;
             default:
@@ -160,11 +156,21 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
         dailyNoteTitleEl.addEventListener(
             "click",
             (event: MouseEvent) => {
-                event.preventDefault();
                 this.app.workspace.getLeaf().openFile(files[i]);
             },
             false
         );
+
+        //hover preview
+        dailyNoteTitleEl.addEventListener('mouseover', (event: MouseEvent) => {
+            this.app.workspace.trigger('hover-link', {
+                event,
+                source: DailyNoteOutlineViewType,
+                hoverParent: rootEl,
+                targetEl: dailyNoteTitleEl,
+                linktext: files[i].path,
+            });
+        });
         // コンテキストメニュー
         dailyNoteTitleEl.addEventListener(
             "contextmenu",
@@ -191,12 +197,18 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
                             this.app.workspace.getLeaf('split').openFile(files[i]);
                         })
                 );
-
-                this.app.workspace.trigger(
-                    "file-menu",
-                    menu,
-                    files[i],
-                    'link-context-menu'
+                //新規ウィンドウに開く
+                menu.addItem((item)=>
+                    item
+                        .setTitle("Open in new window")
+                        .setIcon("scan")
+                        .onClick(async()=> {
+                            // await this.app.workspace.getLeaf('window').openFile(linkTarget);
+                            await this.app.workspace.openPopoutLeaf({size:{width:this.settings.popoutSize.width,height:this.settings.popoutSize.height}}).openFile(files[i]);
+                            if (this.settings.popoutAlwaysOnTop){
+                                setPopoutAlwaysOnTop();
+                            }
+                        })
                 );
                 menu.showAtMouseEvent(event);
             }
@@ -215,6 +227,182 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
         // extract マッチする項目があったかどうか
         let isExtracted = false;
 
+
+        // propertiesの処理
+        if (this.settings.showPropertyLinks && info[i].frontmatterLinks){
+            for (let j = 0; j < info[i].frontmatterLinks.length; j++){
+                
+                const linkTarget = this.app.metadataCache.getFirstLinkpathDest(parseLinktext(info[i].frontmatterLinks[j].link).path, files[i].path);
+                if (!(linkTarget instanceof TFile)) {
+                    continue;
+                }
+                const linkSubpath = parseLinktext(info[i].frontmatterLinks[j].link).subpath;
+                // 抽出 extract
+                if (this.extractMode == true) {
+                    if (this.extractTask == true || !info[i].frontmatterLinks[j].displayText.toLowerCase().includes(this.settings.wordsToExtract.toLowerCase())){
+                        continue;
+                    } else {
+                        isExtracted = true;
+                    }
+                }
+
+                const outlineEl: HTMLElement = dailyNoteChildrenEl.createDiv("tree-item nav-file");
+                const outlineTitle: HTMLElement = outlineEl.createDiv("tree-item-self is-clickable nav-file-title");
+                setIcon(outlineTitle,'link');
+        
+                outlineTitle.style.paddingLeft ='0.5em';
+                outlineTitle.createDiv("tree-item-inner nav-file-title-content").setText(info[i].frontmatterLinks[j].displayText);
+        
+            
+                //クリック時
+                outlineTitle.addEventListener(
+                    "click",
+                    (event: MouseEvent) => {
+                        event.preventDefault();
+                        this.app.workspace.getLeaf().openFile(files[i]);
+                    },
+                    false
+                );
+
+                //hover preview
+                outlineTitle.addEventListener('mouseover', (event: MouseEvent) => {
+                    if (linkTarget){
+                        //リンク情報にsubpath（見出しへのリンク）が含まれる場合、その位置を取得
+                        let posInfo = {};
+                        if(linkSubpath){
+                            const subpathPosition = getSubpathPosition(this.app, linkTarget, linkSubpath);
+                            if (subpathPosition?.start?.line){
+                                posInfo = { scroll: subpathPosition.start.line};
+                            }
+                        }
+                        this.app.workspace.trigger('hover-link', {
+                            event,
+                            source: DailyNoteOutlineViewType,
+                            hoverParent: rootEl,   // rootEl→parentElにした
+                            targetEl: outlineTitle,
+                            linktext: linkTarget.path,
+                            state: posInfo
+                        });
+                    }
+                });
+
+                // contextmenu
+                outlineTitle.addEventListener(
+                    "contextmenu",
+                    (event: MouseEvent) => {
+                        const menu = new Menu();
+
+                        //抽出 filter関連コメントアウト
+                        menu.addItem((item) =>
+                            item
+                                .setTitle("Extract")
+                                .setIcon("search")
+                                .onClick(async ()=>{
+                                    this.plugin.settings.wordsToExtract = info[i].frontmatterLinks[j].displayText;
+                                    await this.plugin.saveSettings();
+                                    this.extractMode = true;
+                                    this.extractTask = false;
+                                    this.refreshView(false,false);
+                                })
+                        );
+                        menu.addSeparator();
+
+
+                        menu.addItem((item)=>
+                            item
+                                .setTitle("Open linked file")
+                                .setIcon("links-going-out")
+                                .onClick(async()=>{
+                                    await this.app.workspace.getLeaf().openFile(linkTarget);
+
+                                    if (linkSubpath){
+                                        const subpathPosition = getSubpathPosition(this.app, linkTarget, linkSubpath);
+                                        scrollToElement(subpathPosition.start?.line,0,this.app);
+                                    }
+                                })
+                        );
+                        menu.addSeparator();
+
+                        //リンク先を新規タブに開く
+                        menu.addItem((item)=>
+                            item
+                                .setTitle("Open linked file in new tab")
+                                .setIcon("file-plus")
+                                .onClick(async()=> {
+                                    await this.app.workspace.getLeaf('tab').openFile(linkTarget);
+                                    if (linkSubpath){
+                                        // linkSubpathがあるときはそこまでスクロール
+                                        const subpathPosition = getSubpathPosition(this.app, linkTarget, linkSubpath);
+                                        scrollToElement(subpathPosition.start?.line, 0, this.app);
+                                    }
+                                })
+                        );
+                        //リンク先を右に開く
+                        menu.addItem((item)=>
+                            item
+                                .setTitle("Open linked file to the right")
+                                .setIcon("separator-vertical")
+                                .onClick(async()=> {
+                                    await this.app.workspace.getLeaf('split').openFile(linkTarget);
+                                    if (linkSubpath){
+                                        const subpathPosition = getSubpathPosition(this.app, linkTarget, linkSubpath);
+                                        scrollToElement(subpathPosition.start?.line, 0, this.app);
+                                    }
+                                })
+                        );
+                        //リンク先を新規ウィンドウに開く
+                        menu.addItem((item)=>
+                            item
+                                .setTitle("Open linked file in new window")
+                                .setIcon("scan")
+                                .onClick(async()=> {
+                                    // await this.app.workspace.getLeaf('window').openFile(linkTarget);
+                                    await this.app.workspace.openPopoutLeaf({size:{width:this.settings.popoutSize.width,height:this.settings.popoutSize.height}}).openFile(linkTarget);
+                                    if (linkSubpath){
+                                        const subpathPosition = getSubpathPosition(this.app, linkTarget, linkSubpath);
+                                        scrollToElement(subpathPosition.start?.line, 0, this.app);
+                                    }
+                                    if (this.settings.popoutAlwaysOnTop){
+                                        setPopoutAlwaysOnTop();
+                                    }
+                                })
+                        );
+                        menu.addSeparator();
+
+                        //新規タブに開く
+                        menu.addItem((item)=>
+                            item
+                                .setTitle("Open in new tab")
+                                .setIcon("file-plus")
+                                .onClick(async()=> {
+                                    await this.app.workspace.getLeaf('tab').openFile(files[i]);
+                                })
+                        );
+                        //右に開く
+                        menu.addItem((item)=>
+                            item
+                                .setTitle("Open to the right")
+                                .setIcon("separator-vertical")
+                                .onClick(async()=> {
+                                    await this.app.workspace.getLeaf('split').openFile(files[i]);
+                                })
+                        );
+                        //新規ウィンドウに開く
+                        menu.addItem((item)=>
+                            item
+                                .setTitle("Open in new window")
+                                .setIcon("scan")
+                                .onClick(async()=> {
+                                    await this.app.workspace.getLeaf('window').openFile(files[i]);
+                                })
+                        );
+                        menu.showAtMouseEvent(event);
+                    }
+                );
+            }
+        }
+
+
         //アウトライン要素の描画。data[i]が要素0ならスキップ
         //二重ループから抜けるためラベルelementloopをつけた
         if (data[i].length > 0){
@@ -223,7 +411,10 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
 
                 // 現アウトライン要素の種別を取得
                 const element = data[i][j].typeOfElement;
-
+                const linkTarget = (element !== 'link')? null : this.app.metadataCache.getFirstLinkpathDest(parseLinktext(data[i][j]?.link).path, files[i].path);
+                const linkSubpath = (!linkTarget)? undefined : parseLinktext(data[i][j]?.link).subpath;
+    
+    
                 //// include mode
                 if (includeMode && this.settings.includeOnly == element){
                     if (isIncluded == true && element == 'heading' && data[i][j].level > includeModeHeadingLevel  ){
@@ -262,7 +453,7 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
                         }
 
                     }
-                }   
+                }  
                 if (isExcluded){
                     continue;
                 }
@@ -406,7 +597,7 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
                             prefix = prefix + '['+data[i][j].task+'] ';
                         }
                 }
-                let dispText = this.stripMarkdownSympol(data[i][j].displayText);
+                let dispText = this.stripMarkdownSymbol(data[i][j].displayText);
 
                 outlineTitle.createDiv("tree-item-inner nav-file-title-content").setText(prefix + dispText);
 
@@ -466,34 +657,17 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
                     }
                     // 空行を除去
                     previewText2 = previewText2.replace(/\n$|\n(?=\n)/g,'');
-                    outlineTitle.ariaLabel = previewText2;
+                    setTooltip(outlineTitle, previewText2, {classes:['daily-note-preview']});
+
                     outlineTitle.dataset.tooltipPosition = this.settings.tooltipPreviewDirection;
-                    outlineTitle.setAttribute('aria-label-delay','10');
-                    outlineTitle.setAttribute('aria-label-classes','daily-note-preview');
+                    outlineTitle.setAttribute('data-tooltip-delay','10');
                 }
-                
-                
+
                 outlineTitle.addEventListener(
                     "click",
                     async(event: MouseEvent) => {
-                        event.preventDefault();
                         await this.app.workspace.getLeaf().openFile(files[i]);
-                        const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-                        if (view) {
-                            view.editor.focus();
-
-                            view.editor.setCursor (data[i][j].position.start.line, data[i][j].position.start.col);
-                            view.editor.scrollIntoView( {
-                                from: {
-                                    line: data[i][j].position.start.line,
-                                    ch:0
-                                },
-                                to: {
-                                    line: data[i][j].position.start.line,
-                                    ch:0
-                                }
-                            }, true);
-                        }
+                        scrollToElement(data[i][j].position.start.line,data[i][j].position.start.col, this.app);
                     },
                     false
                 );
@@ -529,18 +703,71 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
                                 })
                         );
                         menu.addSeparator();
-                        // リンクだったらリンク先を直接開く
+                        // (リンクのみ）リンク先を直接開く
                         if (element =='link'){
                             menu.addItem((item)=>
                                 item
                                     .setTitle("Open linked file")
                                     .setIcon("links-going-out")
                                     .onClick(async()=>{
-                                        const linkedFile = app.metadataCache.getFirstLinkpathDest(data[i][j].link, files[i].path);
-                                        this.app.workspace.getLeaf().openFile(linkedFile);
+                                        await this.app.workspace.getLeaf().openFile(linkTarget);
+                                        if (linkSubpath){
+                                            const subpathPosition = getSubpathPosition(this.app, linkTarget, linkSubpath);
+                                            scrollToElement(subpathPosition.start?.line,0,this.app);
+                                        }
                                     })
                             );
                             menu.addSeparator();
+                            //リンク先を新規タブに開く
+                            menu.addItem((item)=>
+                                item
+                                    .setTitle("Open linked file in new tab")
+                                    .setIcon("file-plus")
+                                    .onClick(async()=> {
+                                        await this.app.workspace.getLeaf('tab').openFile(linkTarget);
+                                        if (linkSubpath){
+                                            const subpathPosition = getSubpathPosition(this.app, linkTarget, linkSubpath);
+                                            scrollToElement(subpathPosition.start?.line, 0, this.app);
+                                        }
+                                    })
+							);
+							//リンク先を右に開く
+							menu.addItem((item)=>
+								item
+									.setTitle("Open linked file to the right")
+									.setIcon("separator-vertical")
+									.onClick(async()=> {
+										if (linkTarget != this.activeFile){
+											this.holdUpdateOnce = true;
+										}
+										await this.app.workspace.getLeaf('split').openFile(linkTarget);
+										if (linkSubpath){
+											const subpathPosition = getSubpathPosition(this.app, linkTarget, linkSubpath);
+											scrollToElement(subpathPosition.start?.line, 0, this.app);
+										}
+									})
+							);
+							//リンク先を新規ウィンドウに開く
+							menu.addItem((item)=>
+								item
+									.setTitle("Open linked file in new window")
+									.setIcon("scan")
+									.onClick(async()=> {
+										if (linkTarget != this.activeFile){
+											this.holdUpdateOnce = true;
+										}
+										// await this.app.workspace.getLeaf('window').openFile(linkTarget);
+										await this.app.workspace.openPopoutLeaf({size:{width:this.settings.popoutSize.width,height:this.settings.popoutSize.height}}).openFile(linkTarget);
+										if (linkSubpath){
+											const subpathPosition = getSubpathPosition(this.app, linkTarget, linkSubpath);
+											scrollToElement(subpathPosition.start?.line, 0, this.app);
+										}
+										if (this.settings.popoutAlwaysOnTop){
+											setPopoutAlwaysOnTop();
+										}
+									})
+							);
+							menu.addSeparator();
                         }
                     
                         //新規タブに開く
@@ -608,9 +835,94 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
         
 
         }
+        //backlink filesの処理
+        if (!this.settings.getBacklinks || !this.settings.showBacklinks){
+            continue;
+        }
+        for (let j = 0; j < info[i].backlinks?.length; j++){
+            
+            // 抽出 extract
+            if (this.extractMode == true) {
+                if (this.extractTask == true || !info[i].backlinks[j].basename.toLowerCase().includes(this.settings.wordsToExtract.toLowerCase())){
+                    continue;
+                } else {
+                    isExtracted = true;
+                }
+            }
+
+
+            const outlineEl: HTMLElement = dailyNoteChildrenEl.createDiv("tree-item nav-file");
+            const outlineTitle: HTMLElement = outlineEl.createDiv("tree-item-self is-clickable nav-file-title");
+            setIcon(outlineTitle,'links-coming-in');
+    
+            outlineTitle.style.paddingLeft ='0.5em';
+            outlineTitle.createDiv("tree-item-inner nav-file-title-content").setText(info[i].backlinks[j].basename);
+    
+        
+            //クリック時
+            outlineTitle.addEventListener(
+                "click",
+                async(event: MouseEvent) => {
+                    await this.app.workspace.getLeaf().openFile(info[i].backlinks[j]);
+                    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+                },
+                false
+            );
+    
+            //hover preview 
+            outlineTitle.addEventListener('mouseover', (event: MouseEvent) => {
+                this.app.workspace.trigger('hover-link', {
+                    event,
+                    source: DailyNoteOutlineViewType,
+                    hoverParent: rootEl,   // rootEl→parentElにした
+                    targetEl: outlineTitle,
+                    linktext: info[i].backlinks[j].path,
+                });
+            });
+
+			// contextmenu
+			outlineTitle.addEventListener(
+				"contextmenu",
+				(event: MouseEvent) => {
+					const menu = new Menu();
+					//リンク元を新規タブに開く
+					menu.addItem((item)=>
+						item
+							.setTitle("Open backlink file in new tab")
+							.setIcon("file-plus")
+							.onClick(async()=> {
+								await this.app.workspace.getLeaf('tab').openFile(info[i].backlinks[j]);
+							})
+					);
+					//リンク先を右に開く
+					menu.addItem((item)=>
+						item
+							.setTitle("Open linked file to the right")
+							.setIcon("separator-vertical")
+							.onClick(async()=> {
+								await this.app.workspace.getLeaf('split').openFile(info[i].backlinks[j]);
+							})
+					);
+					//リンク先を新規ウィンドウに開く
+					menu.addItem((item)=>
+						item
+							.setTitle("Open linked file in new window")
+							.setIcon("scan")
+							.onClick(async()=> {
+								// await this.app.workspace.getLeaf('window').openFile(info.backlinks[i]);
+								await this.app.workspace.openPopoutLeaf({size:{width:this.settings.popoutSize.width,height:this.settings.popoutSize.height}}).openFile(info[i].backlinks[j]);
+								if (this.settings.popoutAlwaysOnTop){
+									setPopoutAlwaysOnTop();
+								}
+							})
+					);
+					menu.showAtMouseEvent(event);
+				});
+        }
+
 
         // noteDOMの後処理
-       
+
         // 折りたたまれていれば子要素を非表示にする
         if (this.collapseAll|| this.settings.fileFlag?.[files[i].path]?.fold){
             dailyNoteEl.classList.add('is-collpased');
@@ -632,3 +944,27 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
 }
 
 
+// スクロール
+export function scrollToElement(line: number, col: number, app: App): void {
+    const view = app.workspace.getActiveViewOfType(MarkdownView);
+    if (view) {
+        view.editor.focus();
+        view.editor.setCursor (line, col);
+        view.editor.scrollIntoView( {
+            from: {
+                line: line,
+                ch:0
+            },
+            to: {
+                line: line,
+                ch:0
+            }
+        }, true);
+    }
+}
+
+function setPopoutAlwaysOnTop(){
+    const { remote } = require('electron');
+    const activeWindow = remote.BrowserWindow.getFocusedWindow();
+    activeWindow.setAlwaysOnTop(true);
+}

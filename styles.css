@@ -105,7 +105,13 @@
     flex-shrink: 1000;
 }
 
-.daily-note-preview{
+/*ツールチッププレビュー*/
+/* .daily-note-preview{
+    text-align: left;
+    animation: unset !important;
+} */
+
+.tooltip.DNO{
     text-align: left;
     animation: unset !important;
 }

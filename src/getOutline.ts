@@ -1,6 +1,7 @@
 import { TFile } from "obsidian";
 import { getDateFromFile } from "obsidian-daily-notes-interface";
 import { FileInfo, GRANULARITY_LIST, OutlineData } from "./main";
+import { getBacklinkFilesDataview } from "./getTargetFiles";
 
 // デイリーノートの配列から各ファイルに関する情報を抽出
 export async function getFileInfo(files:TFile[]):Promise<FileInfo[]>{
@@ -8,12 +9,17 @@ export async function getFileInfo(files:TFile[]):Promise<FileInfo[]>{
     for (let i=0; i < files.length ; i++){
         const content = await this.app.vault.cachedRead(files[i]);
         const lines = content.split("\n");
+
+        const backlinkFiles = (this.settings.getBacklinks) ? getBacklinkFilesDataview( this.app, files[i]): undefined;
+
         let info:FileInfo = {
             date: getDateFromFile(files[i],GRANULARITY_LIST[this.activeGranularity]),
             //content: content,
             lines: lines,
             numOfLines: lines.length,
-            isFolded: false
+            isFolded: false,
+            backlinks: backlinkFiles,
+            frontmatterLinks: undefined
         }
         // periodic notes beta対応
         if (this.verPN == 2){
@@ -26,10 +32,14 @@ export async function getFileInfo(files:TFile[]):Promise<FileInfo[]>{
 }
 
 // メタデータからアウトライン要素を抽出
-export async function getOutline(files:TFile[]):Promise<OutlineData[][]>{
+export async function getOutline(files:TFile[],info:FileInfo[]):Promise<OutlineData[][]>{
     let data:OutlineData[][]=[];    
     for (let i=0; i< files.length ; i++){
         const cache = this.app.metadataCache.getFileCache(files[i]);
+
+        // properties(frontmatter)からリンクを取得
+        info[i].frontmatterLinks = cache?.frontmatterLinks;
+
         // 空配列を指定
         data[i]=[];
         // headings,links,tagsを抽出
@@ -61,9 +71,9 @@ export async function getOutline(files:TFile[]):Promise<OutlineData[][]>{
                     link: cache.links[j].link
                 };
                 data[i].push(element);
-            }				
+            }
         }
-        
+
         // console.log('check lists');
         if (cache.hasOwnProperty("listItems")){
 
