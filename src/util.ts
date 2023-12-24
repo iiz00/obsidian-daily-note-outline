@@ -1,4 +1,4 @@
-import { TFile } from "obsidian";
+import { App, Pos, TFile } from "obsidian";
 import { DailyNoteOutlineSettings } from "./main";
 
 // data.jsonのfileFlagを掃除：値が空配列のプロパティを削除
@@ -34,4 +34,26 @@ export function toggleFlag(file:TFile, flag: 'fold', settings: DailyNoteOutlineS
     } else {
         addFlag(file, flag, settings);
     }
+}
+
+// subpathを含むリンクのリンク先のpositionを取得
+export function getSubpathPosition (app:App, file:TFile, subpath:string):Pos|null{
+    const cache = app.metadataCache.getFileCache(file);
+    if (!cache) {
+        return null;
+    }
+    const checkpath = subpath.replace(/[#^]/g,'');
+    if (cache.headings?.length){
+        const index = cache.headings.findIndex((element) => element.heading.replace(/[#^]/g,'') == checkpath);
+        if (index >= 0){
+            return cache.headings[index].position;
+        }
+    }
+    if (cache.sections?.length){
+        const index = cache.sections.findIndex((element) => element.id?.replace(/[#^]/g,'') == checkpath);
+        if (index >= 0){
+            return cache.sections[index].position;
+        }
+    }
+    return null;
 }

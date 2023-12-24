@@ -41,11 +41,11 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     .addOption("forward","forward")
                     .setValue(this.plugin.settings.initialSearchType)
                     .onChange(async (value) => {
-                      this.plugin.settings.initialSearchType = value;
-                      this.display();
-                      await this.plugin.saveSettings();
-                      this.plugin.view.resetSearchRange();
-                      this.plugin.view.refreshView(false,true,true);
+                        this.plugin.settings.initialSearchType = value;
+                        this.display();
+                        await this.plugin.saveSettings();
+                        this.plugin.view.resetSearchRange();
+                        this.plugin.view.refreshView(false,true,true);
                     })
             });
 
@@ -68,7 +68,6 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     this.plugin.view.resetSearchRange();
                     this.plugin.view.refreshView(false,true,true);
                 }
-                    
             });
         
 
@@ -240,6 +239,19 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
         }
 
         new Setting(containerEl)
+        .setName("Show backlink files")
+        .addToggle((toggle) => {
+            toggle
+                .setValue(this.plugin.settings.showBacklinks)
+                .onChange(async (value) => {
+                    this.plugin.settings.showBacklinks = value;
+                    this.display();
+                    await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,true,true);
+                })
+        });
+
+        new Setting(containerEl)
             .setName("Collapse all at startup")
             .setDesc("enable collapse all function at startup")
             .addToggle((toggle) => {
@@ -268,10 +280,10 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                 .addOption("tag","first tag")  
                 .setValue(this.plugin.settings.displayFileInfoDaily)
                 .onChange(async (value) => {
-                  this.plugin.settings.displayFileInfoDaily = value;
-                  this.display();
-                  await this.plugin.saveSettings();
-                  this.plugin.view.refreshView(false,false,true);
+                    this.plugin.settings.displayFileInfoDaily = value;
+                    this.display();
+                    await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 })
         });
 
@@ -287,10 +299,10 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     .addOption("tag","first tag")
                     .setValue(this.plugin.settings.displayFileInfoPeriodic)
                     .onChange(async (value) => {
-                      this.plugin.settings.displayFileInfoPeriodic = value;
-                      this.display();
-                      await this.plugin.saveSettings();
-                      this.plugin.view.refreshView(false,false,true);
+                        this.plugin.settings.displayFileInfoPeriodic = value;
+                        this.display();
+                        await this.plugin.saveSettings();
+                        this.plugin.view.refreshView(false,false,true);
                     })
             });
         }
@@ -309,10 +321,10 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                 .addOption("popout","popout window")
                 .setValue(this.plugin.settings.viewPosition)
                 .onChange(async (value) => {
-                  this.plugin.settings.viewPosition = value;
-                  this.display();
-                  await this.plugin.saveSettings();
-                  this.plugin.view.refreshView(false,false,true);
+                    this.plugin.settings.viewPosition = value;
+                    this.display();
+                    await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,false,true);
                 })
         });
 
@@ -555,6 +567,64 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
                     })
             });
         }
+
+        // Popout Window
+        this.containerEl.createEl("h4", {
+            text: "Popout window",
+            cls: 'setting-category'
+        });
+        this.containerEl.createEl("p", {
+            text: "Popout window size",
+            cls: 'setting-category'
+        });
+        new Setting(containerEl)
+            .setName("Width")
+            .setDesc("default & min = 600")
+            .addText((text) => {
+                text.inputEl.setAttr('type','number');
+                text
+                    .setPlaceholder(String(DEFAULT_SETTINGS.popoutSize.width))
+                    .setValue(String(this.plugin.settings.popoutSize.width))
+                text.inputEl.onblur = async (e: FocusEvent) => {
+                    let parsed = parseInt((e.target as HTMLInputElement).value,10);
+                    if (parsed <= 600){
+                        parsed = DEFAULT_SETTINGS.popoutSize.width;
+                    }
+                    this.plugin.settings.popoutSize.width = parsed;
+                    await this.plugin.saveSettings();
+                }
+            });
+
+        new Setting(containerEl)
+            .setName("Height")
+            .setDesc("default = 800 min = 600")
+            .addText((text) => {
+                text.inputEl.setAttr('type','number');
+                text
+                    .setPlaceholder(String(DEFAULT_SETTINGS.popoutSize.height))
+                    .setValue(String(this.plugin.settings.popoutSize.height))
+                text.inputEl.onblur = async (e: FocusEvent) => {
+                    let parsed = parseInt((e.target as HTMLInputElement).value,10);
+                    if (parsed <= 600){
+                    parsed = DEFAULT_SETTINGS.popoutSize.height;
+                    }
+                    this.plugin.settings.popoutSize.height = parsed;
+                    await this.plugin.saveSettings();
+                }
+            });
+
+        new Setting(containerEl)
+            .setName("Set popout window always on top")
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.popoutAlwaysOnTop)
+                    .onChange(async (value) => {
+                        this.plugin.settings.popoutAlwaysOnTop = value;
+                        this.display();
+                        await this.plugin.saveSettings();
+                    })
+            });
+
 
         // フィルター
         this.containerEl.createEl("h4", {

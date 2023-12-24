@@ -6,7 +6,7 @@ import { getAllDailyNotes, getDateFromFile, createDailyNote, getDateUID,
 	getAllWeeklyNotes, getAllMonthlyNotes, getAllQuarterlyNotes, getAllYearlyNotes, IGranularity } from "obsidian-daily-notes-interface";
 import moment from "moment"
 
-import DailyNoteOutlinePlugin, { DailyNoteOutlineSettings, OutlineData, FileInfo, FileStatus, DAYS_PER_UNIT,GRANULARITY_LIST, GRANULARITY_TO_PERIODICITY, FILEINFO_TO_DISPLAY, FILEINFO_TO_DISPLAY_DAY} from 'src/main';
+import DailyNoteOutlinePlugin, { DailyNoteOutlineSettings, OutlineData, FileInfo, FileStatus, DAYS_PER_UNIT,GRANULARITY_LIST, GRANULARITY_TO_PERIODICITY, FILEINFO_TO_DISPLAY, FILEINFO_TO_DISPLAY_DAY, DateInfo} from 'src/main';
 
 import { createAndOpenDailyNote } from 'src/createAndOpenDailyNote';
 import { ModalExtract } from 'src/modalExtract';
@@ -20,7 +20,7 @@ import { getTargetFiles, getTargetPeriodicNotes } from './getTargetFiles';
 import { getFileInfo, getOutline } from './getOutline';
 import { drawOutline } from './constructDOM';
 
-
+import { getAPI } from "obsidian-dataview";
 
 
 
@@ -42,6 +42,9 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 	targetFiles: TFile[];
 	// fileStatus: FileStatus[];
 	fileInfo: FileInfo[];
+
+	dateInfo: DateInfo[];
+	
 	searchRange: {
 		latest: moment,
 		earliest: moment
@@ -150,7 +153,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 	}
 
 	private async bootDelay(): Promise<void> {
-		return new Promise(resolve => { setTimeout(resolve, 200);});
+		return new Promise(resolve => { setTimeout(resolve, 300);});
 	}
 
 	private async autoRefresh(){
@@ -180,12 +183,15 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 			if (flagRegetAll){
 				this.allDailyNotes = this.getAllNotes();
 			}
+
+			// await this.testBacklinks();
+
 			if (flagGetTarget){
 				this.targetFiles = getTargetFiles.call(this, this.allDailyNotes, GRANULARITY_LIST[this.activeGranularity]);
 			}
 			if(flagGetOutline){
 				this.fileInfo = await getFileInfo.call(this, this.targetFiles);
-				this.outlineData = await getOutline.call(this, this.targetFiles);
+				this.outlineData = await getOutline.call(this, this.targetFiles,this.fileInfo);
 			}
 			drawUI.call(this);
 			drawOutline.call(this, this.targetFiles, this.fileInfo, this.outlineData);
@@ -201,12 +207,14 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 				this.activeGranularity = 0;
 			}
 
+			// await this.testBacklinks();
+
 			if (flagGetTarget){
 				this.targetFiles = getTargetPeriodicNotes.call(this, this.calendarSets[this.activeSet], GRANULARITY_LIST[this.activeGranularity])
 			}
 			if (flagGetOutline){
 				this.fileInfo = await getFileInfo.call(this, this.targetFiles);
-				this.outlineData = await getOutline.call(this, this.targetFiles);
+				this.outlineData = await getOutline.call(this, this.targetFiles,this.fileInfo);
 			}
 
 			drawUI.call(this);
@@ -220,27 +228,8 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 		}
 	}
 
-	// エディタをアウトライン要素の位置までスクロール
-	private scrollToElement(line: number, col: number): void {
-		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-		if (view) {
-			view.editor.focus();
-			view.editor.setCursor (line, col);
-			view.editor.scrollIntoView( {
-				from: {
-					line: line,
-					ch:0
-				},
-				to: {
-					line: line,
-					ch:0
-				}
-			}, true);
-		}
-	}
-
 	// ［ ］の除去
-	private stripMarkdownSympol(text: string): string {
+	private stripMarkdownSymbol(text: string): string {
 		return (text.replace(/(\[\[)|(\]\])/g,''));
 	}
 
@@ -291,7 +280,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 					if(this.activeGranularity == initialGranularity){
 						break;
 					}
-				}	
+				}
 				this.app.workspace.requestSaveLayout();
 
 				if (this.settings.showDebugInfo){
@@ -302,7 +291,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 				// ver 0.x.x
 				this.settings.calendarSetsEnabled = false;
 				this.activeSet = 0;
-				await this.plugin.saveSettings();  
+				await this.plugin.saveSettings();
 
 				const initialGranularity = this.activeGranularity;
 				while (!this.app.plugins.getPlugin("periodic-notes").settings?.[GRANULARITY_TO_PERIODICITY[GRANULARITY_LIST[this.activeGranularity]]]?.enabled){
@@ -310,7 +299,7 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 					if(this.activeGranularity == initialGranularity){
 						break;
 					}
-				}	
+				}
 				this.app.workspace.requestSaveLayout();
 				return 1;
 			}
@@ -340,4 +329,38 @@ export class DailyNoteOutlineView extends ItemView implements IDailyNoteOutlineS
 				return getAllYearlyNotes();
 		}
 	}
+
+	// バックリンク、dataviewのテスト用
+	// async testBacklinks():Promise<void>{
+
+	// 	const startTime = performance.now();
+	// 	// 未解決リンク
+	// 	let unresolvedLinks = this.app.metadataCache.unresolvedLinks;
+	// 	console.log('未解決リンク',unresolvedLinks);
+	// 	// 特定の未解決リンクを含むノートを抽出
+	// 	const result = Object.entries(unresolvedLinks).filter((valueArray)=> valueArray[1].hasOwnProperty("2023-12-22_Friday"));
+
+	// 	const endTime = performance.now();
+	// 	console.log('未解決リンク探索所要時間', endTime - startTime);
+
+	// 	const sTime2 = performance.now();
+	// 	//dataviewAPI 取得
+	// 	const dataviewAPI= getAPI();
+	// 	const testValue = await dataviewAPI.pages('-"Daily"');
+	// 	console.log('Dailyを除くファイル',testValue);
+	// 	const eTime2 = performance.now();
+	// 	console.log('dataview pages取得所要時間', eTime2-sTime2);
+
+	// 	const sTime3 = performance.now();
+	// 	// 特定のmdayを持つファイルの検索
+	// 	//let testValue2 = [];
+	// 	// for (let i = 0; i< 56; i++){
+	// 	// 	const dvquery:string = 'LIST WHERE file.mday = date(today) - dur(' + i + ' d)';
+	// 	// 	const result = await dataviewAPI.query(dvquery);
+	// 	// 	testValue2.push(result.value.values);
+	// 	// }
+	// 	//console.log('データビュー2',testValue2);
+	// 	const eTime3 = performance.now();
+	// 	console.log('期間範囲指定mday', eTime3-sTime3);
+	// }
 }

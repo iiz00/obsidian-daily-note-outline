@@ -10,18 +10,15 @@ This plugin creates a custom view that displays the outlines of multiple daily n
 ![demo](others/demo.gif)
 
 
-## New function for v1.0.0 - Support for Periodic Notes plugin
+## New experimental function for v1.4.0 - Show backlink files
 
-Daily Note Outline v1.0.0 adds support for periodic notes as a new feature. That is, support for weekly/monthly/quarterly/yearly notes and calendar sets.
-(For more information on periodic notes, see https://github.com/liamcain/obsidian-periodic-notes)<br>
-To display periodic notes in DNO, the following steps are required.
-- Install and activate Periodic Notes community plugin and properly configure the granularity and folder paths to be used.
-- Activate "periodic notes" and "calendar sets" in the "Periodic Notes" section of the DNO settings.
+Daily Note Outline v1.4.0 adds displaying backlink files.(Settings -> Basics -> Show backlink files)<br>
+In my use case, I have created a template file like `[[{{date}}]]` and assigned a hotkey with the Hotkeys for templates plugin by @Vinzent03 (https://github.com/Vinzent03/obsidian-hotkeys-for-templates) to insert a link to the daily note for that day.<br>
+Users who create daily notes every day will find this convenient, as they can see the note with the date inserted from DNO view.
 
 **Notes**
-- Calendar sets is a feature added in Periodic Notes v1.0.0-beta version and is not available in v0.0.17.  To use the calendar set feature, you must install the beta version of Periodic Notes, e.g., by using Obsidian BRAT plugin.
-	- Also, since calendar sets is a beta feature of Periodic Notes, there is a possibility that it may not be available in DNO in the future due to specification changes in Periodic Notes.
-- If you find any problems, please let me know at the forum or GitHub repository.
+From a speed perspective, I strongly recommend installing Dataview plugin when turning this feature on.<br>
+The Dataview plugin caches the vault's backlink information, and DNO attempts to use its cache when Dataview plugin is activated. In this case, the backlink information can be retrieved significantly faster than without Dataview.
 
 ### Usage
 - After activating the feature, the current granularity (day/week/month/quarter/year) and calendar set name will be displayed on DNO's view.
@@ -46,6 +43,19 @@ Push Ctrl key to preview.<br>
 I recommend that you first set the display/hide settings for each outline element (headings, links, tags, and list items) in the settings.
 
 ## Feature
+### Support for Periodic Notes plugin
+
+Daily Note Outline v1.0.0- supports for periodic notes. That is, support for weekly/monthly/quarterly/yearly notes and calendar sets.
+(For more information on periodic notes, see https://github.com/liamcain/obsidian-periodic-notes)<br>
+To display periodic notes in DNO, the following steps are required.
+- Install and activate Periodic Notes community plugin and properly configure the granularity and folder paths to be used.
+- Activate "periodic notes" and "calendar sets" in the "Periodic Notes" section of the DNO settings.
+
+**Notes**
+- Calendar sets is a feature added in Periodic Notes v1.0.0-beta version and is not available in v0.0.17.  To use the calendar set feature, you must install the beta version of Periodic Notes, e.g., by using Obsidian BRAT plugin.
+	- Also, since calendar sets is a beta feature of Periodic Notes, there is a possibility that it may not be available in DNO in the future due to specification changes in Periodic Notes.
+- If you find any problems, please let me know at the forum or GitHub repository.
+
 ### Simple filter / Include / Exclude
 
 In order to hide unnecessary items and display only the necessary ones, three types of filter functions are implemented: **Simple filter**, **Include**, and **Exclude**.
@@ -212,6 +222,16 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 	- better preview
 
 ## Changelog
+- 1.4.0
+	- New experimental function
+		- Show backlink files
+			- You can enable the display of the backlink file to daily notes through the settings (only for existing daily notes at this time).
+			- For speed, I strongly recommend installing the dataview plugin if you enable this feature.
+	- Improvements
+		- The context menu of the link element now allows you to open the linked file in a new tab/new pane/new window.
+		- You can now set the size of the pop-out window and whether it should be displayed in the foreground(always on top).
+	- Fixed
+		- Fixed tooltip preview was not working correctly due to recent (re)changes in Obsidian.
 - 1.3.1
 	- Fixed
 		- Fixed DNO view becomes active when starting Obsidian
@@ -255,7 +275,7 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 		- Added a setting to display debugging information in the console at the bottom of the settings.
 			- At this time, this feature is intended to narrow down the cause of reports of inability to switch to weekly notes when using the beta version of the Periodic Notes plugin.
 - 1.0.0
-	- Test new function
+	- New experimental function
 		- Support for Periodic Notes plugin (display periodic notes, calendar sets)
 			- You have to install and enable Periodic Notes community plugin in advance.
 	- Improvement
@@ -329,16 +349,13 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 ![demo](others/demo.gif)
 
 
-## v1.0.0の新機能 - Periodic Notes pluginのサポート
-Daily Note Outline v1.0.0では、新機能としてperiodic notesへの対応を追加しています。即ち、weekly/monthly/quarterly/yearly note、およびカレンダーセットへの対応です。
-（periodic notesについては詳しくは https://github.com/liamcain/obsidian-periodic-notes を参照してください）
-periodic notesをDNOで表示するには、以下のステップが必要です。
-- Periodic Notes communityプラグインをインストール、有効化し、使用する粒度やフォルダパスなどの設定を適切に行う。
-- DNOの設定の「Periodic Notes」セクションにおいて、「periodic notes」や「calendar sets」を有効化する。
+## v1.4.0の試験的機能 - バックリンクファイルの表示
+Daily Note Outline v1.4.0では、バックリンクファイルの表示を追加しています。設定のBasics -> Show backlink filesを有効化してください。<br>
+私の場合、`[[{{date}}]]`というテンプレートファイルを作成し、Hotkeys for templatesプラグインby @Vinzent03(https://github.com/Vinzent03/obsidian-hotkeys-for-templates)でホットキーを割り当て、ノートに当日デイリーノートへのリンクを挿入できるようにしています。<br>
+毎日デイリーノートを作成している方には、日付が挿入したノートをDNOから参照できて便利かと思います。<br>
 
 **注意点**
-- カレンダーセットはperiodic notes v1.0.0-beta版で追加された機能であり、v0.0.17でなく、obsidian BRATプラグインを利用するなどして、ベータ版のPeriodic Notesをインストールしないと利用できません。また、ベータ版の機能であることから、今後の仕様変更などに際して利用できなくなる可能性があります。
-- 不具合など合った場合は、forumやGitHubリポジトリまで是非お知らせ下さい。
+- 動作速度の観点から、バックリンクの表示をオンにする場合、Dataviewプラグインをインストールすることを強くお勧めします。Dataviewプラグインはバックリンクファイルの情報をキャッシュしており、有効化されているとDNOはそのキャッシュ情報を利用するため、処理がずっと速くなります。<br>
 
 ### 使用法
 - 機能を有効化すると、DNOのview上方に現在表示している粒度（day/week/month/quarter/year）やカレンダーセット名が表示されるようになります。
@@ -362,6 +379,16 @@ Daily NoteコアプラグインもしくはPeriodic Notesプラグインが有�
 使用にあたり、まず設定画面で各アウトライン要素（見出し、リンク、タグ、リスト項目）ごとに表示/非表示を設定することをお勧めします。
 
 ## Feature 機能
+## Periodic Notes pluginのサポート
+Daily Note Outline v1.0.0以降では、periodic notesへ対応しています。即ち、weekly/monthly/quarterly/yearly note、およびカレンダーセットへの対応です。<br>
+（periodic notesについては詳しくは https://github.com/liamcain/obsidian-periodic-notes を参照してください）<br>
+periodic notesをDNOで表示するには、以下のステップが必要です。<br>
+- Periodic Notes communityプラグインをインストール、有効化し、使用する粒度やフォルダパスなどの設定を適切に行う。<br>
+- DNOの設定の「Periodic Notes」セクションにおいて、「periodic notes」や「calendar sets」を有効化する。<br>
+
+**注意点**
+- カレンダーセットはperiodic notes v1.0.0-beta版で追加された機能であり、v0.0.17でなく、obsidian BRATプラグインを利用するなどして、ベータ版のPeriodic Notesをインストールしないと利用できません。また、ベータ版の機能であることから、今後の仕様変更などに際して利用できなくなる可能性があります。<br>
+- 不具合など合った場合は、forumやGitHubリポジトリまで是非お知らせ下さい。<br>
 ### Simple filter / Include / Exclude フィルター
 不必要な項目を非表示にし、必要な項目のみ表示するために、simple filter, include, exclude の3つのフィルター機能を実装しています。<br>
 simple filterは、指定した単語やフレーズにマッチする項目を、単純に非表示にします。項目ごとの階層は考慮されません。<br>

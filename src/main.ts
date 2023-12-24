@@ -150,6 +150,17 @@ export interface DailyNoteOutlineSettings {
 
 	collapseAllAtStartup: boolean;
 
+	// getBacklinks: boolean;
+	showBacklinks: boolean;
+
+	showPropertyLinks: boolean;
+
+	popoutSize: {
+		width: number;
+		height: number;
+	}
+	popoutAlwaysOnTop: boolean;
+
 }
 
 // 設定項目デフォルト
@@ -303,6 +314,17 @@ export const DEFAULT_SETTINGS: DailyNoteOutlineSettings = {
 	},
 
 	collapseAllAtStartup: false,
+
+	// getBacklinks: true,
+	showBacklinks: false,
+
+	showPropertyLinks: true,
+
+	popoutSize: {
+		width: 600,
+		height: 800
+	},
+	popoutAlwaysOnTop: false,
 }
 
 // export interface FileStatus {
@@ -314,8 +336,23 @@ export interface FileInfo {
 	date: moment;
 	//content: string;
 	lines: string[];
-	numOfLines: number
+	numOfLines: number;
 	isFolded: boolean;
+	backlinks?: TFile[];
+	frontmatterLinks?: {
+		displayText?: string;
+		key: string;
+		link: string;
+		original: string;
+	}[];
+}
+
+export interface DateInfo {
+	date: moment;
+	dailyNote: boolean;
+	unresolvedLinks: TFile[];
+	// createdFiles: TFile[];
+	// modifiedFiles: TFile[];
 }
 
 export interface OutlineData {	

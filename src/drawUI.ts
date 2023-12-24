@@ -276,6 +276,19 @@ function uiSetting(parentEl: HTMLElement, granularity: IGranularity):void{
                         })
                 );
             }
+
+            const iconBacklink = (this.settings.showBacklinks == true)? "check":"";
+            menu.addItem((item)=>
+            item
+                .setTitle(`show backlink files`)
+                .setIcon(iconBacklink)
+                .onClick(async()=>{
+                    this.settings.showBacklinks = !this.settings.showBacklinks;
+                    await this.plugin.saveSettings();
+                    this.refreshView(false,false,false);
+                })
+            );
+
             menu.addSeparator();
             if (granularity =='day'){
                 for (let index in FILEINFO_TO_DISPLAY_DAY){
@@ -306,11 +319,11 @@ function uiSetting(parentEl: HTMLElement, granularity: IGranularity):void{
             }
             menu.addSeparator();
 
-            const icon = (this.settings.tooltipPreview)? "check":"";
+            const iconTooltip = (this.settings.tooltipPreview)? "check":"";
             menu.addItem((item)=>
                 item
                     .setTitle("show tooltip preview")
-                    .setIcon(icon)
+                    .setIcon(iconTooltip)
                     .onClick(async()=>{
                         this.settings.tooltipPreview = !this.settings.tooltipPreview;
                         await this.plugin.saveSettings();
@@ -345,7 +358,7 @@ function uiCreateDailyNote(parentEl:HTMLElement, granularity: IGranularity):void
     }
 
     navActionButton.ariaLabel = labelForToday;
-    setIcon(navActionButton,"calendar-plus",20);
+    setIcon(navActionButton,"calendar-plus");
     navActionButton.addEventListener(
         "click",
         async (event:MouseEvent) =>{
@@ -388,7 +401,7 @@ function uiExtract(parentEl: HTMLElement):void{
     if (!this.extractMode){
         //抽出をオンに
         navActionButton.ariaLabel = "extract";
-        setIcon(navActionButton,"search",20);
+        setIcon(navActionButton,"search");
         navActionButton.addEventListener(
         "click",
         async (event:MouseEvent) =>{
@@ -406,7 +419,7 @@ function uiExtract(parentEl: HTMLElement):void{
     } else {
         //抽出をオフに
         navActionButton.ariaLabel = "unextract";
-        setIcon(navActionButton,"x-circle",20);
+        setIcon(navActionButton,"x-circle");
         navActionButton.classList.add('is-active');
         navActionButton.addEventListener(
         "click",
