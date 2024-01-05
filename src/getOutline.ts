@@ -10,7 +10,7 @@ export async function getFileInfo(files:TFile[]):Promise<FileInfo[]>{
         const content = await this.app.vault.cachedRead(files[i]);
         const lines = content.split("\n");
 
-        const backlinkFiles = (this.settings.getBacklinks) ? getBacklinkFilesDataview( this.app, files[i]): undefined;
+        const backlinkFiles = (this.settings.showBacklinks) ? getBacklinkFilesDataview( this.app, files[i]): undefined;
 
         let info:FileInfo = {
             date: getDateFromFile(files[i],GRANULARITY_LIST[this.activeGranularity]),
@@ -42,6 +42,9 @@ export async function getOutline(files:TFile[],info:FileInfo[]):Promise<OutlineD
 
         // 空配列を指定
         data[i]=[];
+        if (!cache){
+            continue;
+        }
         // headings,links,tagsを抽出
 
         // console.log('check headings',cache.hasOwnProperty("headings") );

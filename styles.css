@@ -106,15 +106,12 @@
 }
 
 /*ツールチッププレビュー*/
-/* .daily-note-preview{
+.DNO-preview{
     text-align: left;
     animation: unset !important;
-} */
-
-.tooltip.DNO{
-    text-align: left;
-    animation: unset !important;
+    max-width: 600px;
 }
+
 
 /*設定画面 settings*/
 /*インデント用*/
