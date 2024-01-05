@@ -657,7 +657,7 @@ export function drawOutline( files: TFile[], info: FileInfo[], data: OutlineData
                     }
                     // 空行を除去
                     previewText2 = previewText2.replace(/\n$|\n(?=\n)/g,'');
-                    setTooltip(outlineTitle, previewText2, {classes:['daily-note-preview']});
+                    setTooltip(outlineTitle, previewText2, {classes:['DNO-preview']});
 
                     outlineTitle.dataset.tooltipPosition = this.settings.tooltipPreviewDirection;
                     outlineTitle.setAttribute('data-tooltip-delay','10');

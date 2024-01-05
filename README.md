@@ -222,6 +222,13 @@ If you like my plugin, I would appreciate it if you could buy me a cup of coffee
 	- better preview
 
 ## Changelog
+- 1.4.1
+	- Improvement
+		- Added `show links in properties` in the settings
+		- Increased the maximum width of tooltip preview
+	- Fixed
+		- Fixed tooltip preview not being fixed correctly.
+		- Fixed error sometimes displayed in console.
 - 1.4.0
 	- New experimental function
 		- Show backlink files

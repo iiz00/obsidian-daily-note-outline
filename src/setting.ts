@@ -239,6 +239,18 @@ export class DailyNoteOutlineSettingTab extends PluginSettingTab {
         }
 
         new Setting(containerEl)
+        .setName("Show links in properties")
+        .addToggle((toggle) => {
+            toggle
+                .setValue(this.plugin.settings.showPropertyLinks)
+                .onChange(async (value) => {
+                    this.plugin.settings.showPropertyLinks = value;
+                    this.display();
+                    await this.plugin.saveSettings();
+                    this.plugin.view.refreshView(false,true,true);
+                })
+        });
+        new Setting(containerEl)
         .setName("Show backlink files")
         .addToggle((toggle) => {
             toggle
